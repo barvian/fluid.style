@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+
+@layer base {
+	input[type='number']::-webkit-outer-spin-button,
+	input[type='number']::-webkit-inner-spin-button,
+	input[type='number'] {
+		-webkit-appearance: none;
+		margin: 0;
+		-moz-appearance: textfield !important;
+	}
+
+	input:focus:not(:focus-visible) {
+		outline: none;
+	}
+
+	:root {
+		@apply bg-neutral-50 bg-grid bg-repeat min-h-screen antialiased overflow-x-hidden;
+	}
+	
+	h1 {
+		@apply max-md:text-xl max-xl:text-4xl
+	}
+}
+
+@layer utilities {
+	.overlap {
+		display: grid;
+		grid-template-areas: 'overlap';
+	}
+	
+	.inline-overlap {
+		display: inline-grid;
+		grid-template-areas: 'overlap';
+	}
+	.overlap > :not(.absolute),
+	.inline-overlap > :not(.absolute),
+	.overlap-item,
+	.inline-overlap-item {
+		grid-area: overlap;
+	}
+}
+
+@tailwind utilities;
