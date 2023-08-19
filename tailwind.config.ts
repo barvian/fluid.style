@@ -17,7 +17,7 @@ export default {
 				xs: '480px'
 			},
 			fontFamily: {
-				sans: ['Inter var', 'sans-serif']
+				// sans: ['Inter var', 'sans-serif']
 			},
 			fontSize: {
 				'lg-md': '2rem'
