@@ -4,7 +4,7 @@
 	import Number from './Number.svelte'
 	import { persistable } from '$lib/stores'
 	import { compute, to10th, to100th, to1000th, clamp, type Unit, inRange } from '$lib/math'
-	import { fade } from 'svelte/transition'
+	import { fade, scale } from 'svelte/transition'
 	import copy from 'copy-to-clipboard'
 	import { writable, type Writable } from 'svelte/store'
 	import { resize } from '$lib/actions'
@@ -28,6 +28,17 @@
 
 	$: ({ slope, intercept, failRange } = compute({ min: $min, max: $max, minBP: $minBP, maxBP: $maxBP, checkSC144: type }))
 	$: cssText = `clamp(${to1000th(Math.min($min, $max))}${$unit}, ${to1000th(intercept)}${$unit} + ${to1000th(slope*100)}vw, ${to1000th(Math.max($min, $max))}${$unit})`
+	let copied = false, copyTimeout: number
+	const handleCssTextChange = () => {
+		copied = false
+		clearTimeout(copyTimeout)
+	}
+	$: if (cssText) handleCssTextChange()
+	function copyCode() {
+		copy(cssText)
+		copied = true
+		copyTimeout = setTimeout(() => copied = false, 3000)
+	}
 </script>
 
 <svelte:document on:keydown={handleKeydown} />
@@ -92,13 +103,19 @@
 			<output class="col-span-2 rounded-b-[--rounded] overflow-hidden overlap" for="min-size min-breakpoint max-size max-breakpoint">
 				<code class="block bg-[#393939] overflow-x-auto whitespace-nowrap text-white text-lg font-bold text-center p-[clamp(1.25rem,0.989rem_+_1.304vw,2rem)]">
 					<span class="text-neutral-400">{type ? 'font-size' : 'property'}:</span>
-					<button type="button" title="Copy CSS code" class="cursor-copy border-neutral-200 group transition-colors hover:bg-white/10 active:bg-white/0 active:transition-none rounded-md border px-[2%] py-[1%] border-dashed" on:click={() => copy(cssText)}>
+					<button type="button" title="Copy CSS code" class="cursor-copy border-neutral-200 group transition-colors hover:bg-white/10 active:bg-white/0 active:transition-none rounded-md border px-4 py-2.5 border-dashed" on:click={copyCode}>
 						{cssText}
-						<div class="aspect-square w-6 relative -top-[0.0625em] inline-flex items-center justify-center bg-white/10 group-hover:bg-white/0 transition-colors rounded-sm align-middle">
-							<svg class="w-3" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-								<path d="M10.9333 11.3333H4.4C4.17909 11.3333 4 11.1543 4 10.9333V4.4C4 4.17909 4.17909 4 4.4 4H10.9333C11.1543 4 11.3333 4.17909 11.3333 4.4V10.9333C11.3333 11.1543 11.1543 11.3333 10.9333 11.3333Z" stroke="white" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>
-								<path d="M7.99996 4.00008V1.06675C7.99996 0.845835 7.82089 0.666748 7.59996 0.666748H1.06663C0.845713 0.666748 0.666626 0.845835 0.666626 1.06675V7.60008C0.666626 7.82101 0.845713 8.00008 1.06663 8.00008H3.99996" stroke="white" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>
-							</svg>
+						<div class="aspect-square w-6 relative inline-block -top-[0.0625em] items-center justify-center bg-white/10 group-hover:bg-white/0 transition-colors rounded-sm align-middle">
+							{#if copied}
+								<svg transition:scale class="w-4 absolute -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+									<path d="M20 6L9 17l-5-5" vector-effect="non-scaling-stroke"/>
+								</svg>
+							{:else}
+								<svg transition:scale class="w-3 absolute -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path d="M10.9333 11.3333H4.4C4.17909 11.3333 4 11.1543 4 10.9333V4.4C4 4.17909 4.17909 4 4.4 4H10.9333C11.1543 4 11.3333 4.17909 11.3333 4.4V10.9333C11.3333 11.1543 11.1543 11.3333 10.9333 11.3333Z" stroke="white" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>
+									<path d="M7.99996 4.00008V1.06675C7.99996 0.845835 7.82089 0.666748 7.59996 0.666748H1.06663C0.845713 0.666748 0.666626 0.845835 0.666626 1.06675V7.60008C0.666626 7.82101 0.845713 8.00008 1.06663 8.00008H3.99996" stroke="white" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>
+								</svg>
+							{/if}
 						</div>
 					</button>
 				</code>
