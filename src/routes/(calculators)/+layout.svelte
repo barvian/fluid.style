@@ -14,7 +14,7 @@
 	minBP = persistable(20, 'min-bp'), maxBP = persistable(77.5, 'max-bp')
 	let unit = persistable<Unit>('rem', 'unit')
 
-	let zoom = 1, prefWidth: Writable<number> = writable(), actualWidth: number
+	let zoom = 1, prefWidth: Writable<number> = writable(), actualWidth: number, resizing = writable(false)
 	$: if (actualWidth) $prefWidth = actualWidth
 	function handleKeydown(e: KeyboardEvent) {
 		if ((e.metaKey || e.ctrlKey) && e.key === '=') {
@@ -53,8 +53,8 @@
 		<NavItem href="/type" shortcut="T">Type</NavItem>
 		<NavItem href="/spacing" shortcut="S">Spacing</NavItem>
 	</nav>
-	<header class="flex items-stretch border-y flex-1 min-h-[10rem] border-neutral-150 [&:has(button:hover)_button]:bg-neutral-250 [&:has(button:hover)]:border-neutral-250 mx-auto max-w-[92%] min-w-[15rem] {actualWidth ? 'w-min' : 'w-full'}">
-		<button use:resize={{ direction: 'right', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth }} tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5"><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
+	<header class="flex items-stretch border-y flex-1 min-h-[10rem] border-neutral-150 [&:has(button:hover)_button]:bg-neutral-250 [&:has(button:hover)]:border-neutral-250 mx-auto max-w-[92%] min-w-[15rem] {actualWidth ? 'w-min' : 'w-full'}" class:border-neutral-250={$resizing}>
+		<button use:resize={{ direction: 'right', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth, resizing }} tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5" class:bg-neutral-250={$resizing}><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
 		<div class="@container flex-1 relative overflow-hidden" bind:clientWidth={actualWidth} style:width={$prefWidth == null ? '100%' : $prefWidth+'px'} style:--computed-size="clamp({to1000th(Math.min($min, $max))}{$unit}*{zoom}, {to1000th(intercept)}{$unit}*{zoom} + {to1000th(slope*100)}cqw, {to1000th(Math.max($min, $max))}{$unit}*{zoom})">
 			<div class="absolute inset-0 overflow-y-auto">
 				<div class="p-9 flex items-center justify-center h-full">
@@ -86,7 +86,7 @@
 				</div>
 			{/if}
 		</div>
-		<button use:resize={{ direction: 'left', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth }}  tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5"><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
+		<button use:resize={{ direction: 'left', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth, resizing }}  tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5" class:bg-neutral-250={$resizing}><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
 	</header>
 	<main class="@container mt-[max(8vh,theme(spacing.12))] mb-[max(6vh,theme(spacing.8))]">
 		<form class="grid grid-cols-2 relative [--rounded:clamp(1rem,0.739rem_+_1.304vw,1.75rem)] max-w-4xl mx-auto before:absolute before:-inset-x-[10%] before:-inset-y-[80%] before:bg-gradients before:-z-[2] before:blur-[100px] before:pointer-events-none before:saturate-150 after:bg-white after:absolute after:inset-0 after:-z-[1] after:rounded-[--rounded] after:shadow-2xl">
