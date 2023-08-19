@@ -101,10 +101,10 @@
 				<span class="inline md:inline-block md:mt-5 md:text-neutral-450 md:text-2xl">@</span>
 				<Number class="max-md:contents" label="Breakpoint" id="max-breakpoint" bind:value={$maxBP} bind:unit={$unit} unitTabbable />
 			</fieldset>
-			<output class="col-span-2 rounded-b-[--rounded] overflow-hidden overlap" for="min-size min-breakpoint max-size max-breakpoint">
-				<code class="block bg-[#393939] overflow-x-auto whitespace-nowrap text-white text-lg font-bold text-center p-[clamp(1.25rem,0.989rem_+_1.304vw,2rem)]">
+			<output class="col-span-2 rounded-b-[--rounded] overflow-hidden overlap text-[clamp(1rem,0.957rem_+_0.217vw,1.125rem)]" for="min-size min-breakpoint max-size max-breakpoint">
+				<code class="block bg-[#393939] overflow-x-auto whitespace-nowrap text-white font-bold text-center p-[clamp(1.25rem,0.989rem_+_1.304vw,2rem)]">
 					<span class="text-neutral-400">{type ? 'font-size' : '[property]'}:</span>
-					<button type="button" title="Copy CSS code" class="cursor-copy border-neutral-200 group transition-colors hover:bg-white/10 active:bg-white/0 active:transition-none rounded-md border px-4 py-2.5 border-dashed" on:click={copyCode}>
+					<button type="button" title="Copy CSS code" class="cursor-copy border-neutral-200 group transition-colors hover:bg-white/10 active:bg-white/0 active:transition-none rounded-md border px-[0.889em] py-[0.55em] border-dashed" on:click={copyCode}>
 						{cssText}
 						<div class="aspect-square w-6 relative inline-block -top-[0.0625em] items-center justify-center bg-white/10 group-hover:bg-white/0 transition-colors rounded-sm align-middle">
 							{#if copied}
@@ -121,7 +121,7 @@
 					</button>
 				</code>
 				{#if failRange?.length}
-					<div class="bg-red-500 relative text-white text-center text-lg font-bold p-[clamp(1.25rem,0.989rem_+_1.304vw,2rem)] flex items-center justify-center" in:fade={{ duration: 150 }}>
+					<div class="bg-red-500 relative text-white text-center font-bold p-[clamp(1.25rem,0.989rem_+_1.304vw,2rem)] flex items-center justify-center" in:fade={{ duration: 150 }}>
 						<p>
 							Fails <a class="underline underline-offset-[0.25em] hover:opacity-90" href="https://www.w3.org/WAI/WCAG21/Understanding/resize-text.html">WCAG SC 1.4.4</a> in Chrome/Edge/Firefox at viewport widths {to10th(failRange[0])}–{to10th(failRange[1])}{$unit}
 						</p>
