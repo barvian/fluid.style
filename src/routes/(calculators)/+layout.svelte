@@ -103,7 +103,7 @@
 			</fieldset>
 			<output class="col-span-2 rounded-b-[--rounded] overflow-hidden overlap" for="min-size min-breakpoint max-size max-breakpoint">
 				<code class="block bg-[#393939] overflow-x-auto whitespace-nowrap text-white text-lg font-bold text-center p-[clamp(1.25rem,0.989rem_+_1.304vw,2rem)]">
-					<span class="text-neutral-400">{type ? 'font-size' : 'property'}:</span>
+					<span class="text-neutral-400">{type ? 'font-size' : '[property]'}:</span>
 					<button type="button" title="Copy CSS code" class="cursor-copy border-neutral-200 group transition-colors hover:bg-white/10 active:bg-white/0 active:transition-none rounded-md border px-4 py-2.5 border-dashed" on:click={copyCode}>
 						{cssText}
 						<div class="aspect-square w-6 relative inline-block -top-[0.0625em] items-center justify-center bg-white/10 group-hover:bg-white/0 transition-colors rounded-sm align-middle">
