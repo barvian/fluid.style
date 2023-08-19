@@ -4,7 +4,7 @@
 	import Number from './Number.svelte'
 	import { persistable } from '$lib/stores'
 	import { compute, to10th, to100th, to1000th, clamp, type Unit, inRange } from '$lib/math'
-	import { fade, scale } from 'svelte/transition'
+	import { scale } from 'svelte/transition'
 	import copy from 'copy-to-clipboard'
 	import { writable, type Writable } from 'svelte/store'
 	import { resize } from '$lib/actions'
@@ -123,7 +123,7 @@
 					</button>
 				</code>
 				{#if failRange?.length}
-					<div class="bg-red-500 relative text-white text-center font-bold p-[clamp(1.25rem,0.989rem_+_1.304vw,2rem)] flex items-center justify-center" in:fade={{ duration: 150 }}>
+					<div class="bg-red-500 relative text-white text-center font-bold p-[clamp(1.25rem,0.989rem_+_1.304vw,2rem)] flex items-center justify-center">
 						<p>
 							Fails <a class="underline underline-offset-[0.25em] hover:opacity-90" href="https://www.w3.org/WAI/WCAG21/Understanding/resize-text.html">WCAG SC 1.4.4</a> in Chrome/Edge/Firefox at viewport widths {to10th(failRange[0])}–{to10th(failRange[1])}{$unit}
 						</p>
