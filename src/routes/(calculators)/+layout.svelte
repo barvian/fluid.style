@@ -37,6 +37,7 @@
 	function copyCode() {
 		copy(cssText)
 		copied = true
+		if (copyTimeout) clearTimeout(copyTimeout)
 		copyTimeout = setTimeout(() => copied = false, 3000)
 	}
 </script>
