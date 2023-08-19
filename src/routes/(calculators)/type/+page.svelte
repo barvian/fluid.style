@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { sessionable } from "$lib/stores"
+	import { onMount } from "svelte"
 
 	let content = sessionable(`
 		An
 		<span contenteditable="false" class="text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 to-cyan-500">accessible</span>
 		fluid type generator
 	`, 'calculator-text')
+
+	let mounted = false
+	onMount(() => mounted = true)
 </script>
 
 <svelte:head>
@@ -17,5 +21,5 @@
 	on:keydown={(e) => {
 		if (!e.metaKey && !e.ctrlKey) e.stopPropagation()
 	}}
-	class="outline-none text-[length:--computed-size] leading-[1.1] font-bold text-center"
+	class="invisible no-js:visible {mounted ? '!visible' : ''} outline-none text-[length:--computed-size] leading-[1.1] font-bold text-center"
 />
