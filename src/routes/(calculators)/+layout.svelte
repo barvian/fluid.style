@@ -2,7 +2,7 @@
 	import { page } from '$app/stores'
 	import NavItem from './NavItem.svelte'
 	import Number from './Number.svelte'
-	import { persistable } from '$lib/stores'
+	import { paramable } from '$lib/stores'
 	import { compute, to10th, to100th, to1000th, clamp, type Unit, inRange } from '$lib/math'
 	import { scale } from 'svelte/transition'
 	import copy from 'copy-to-clipboard'
@@ -11,9 +11,9 @@
 	import { browser } from '$app/environment'
 	
 	$: type = $page.url.pathname === '/type'
-	let min = persistable(2, 'min'), max = persistable(5, 'max'),
-	minBP = persistable(20, 'min-bp'), maxBP = persistable(77.5, 'max-bp')
-	let unit = persistable<Unit>('rem', 'unit')
+	let min = paramable(2, 'min'), max = paramable(5, 'max'),
+	minBP = paramable(20, 'min-bp'), maxBP = paramable(77.5, 'max-bp')
+	let unit = paramable<Unit>('rem', 'unit')
 
 	let zoom = 1, prefWidth: Writable<number> = writable(), actualWidth: number, resizing = writable(false)
 	$: if (actualWidth) $prefWidth = actualWidth
