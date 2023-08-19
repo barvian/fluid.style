@@ -131,7 +131,7 @@
 	</main>
 </div>
 <footer class="text-center mt-mt-[max(3vh,theme(spacing.5))] mb-[max(8vh,theme(spacing.12))] relative">
-	<p class="text-neutral-450 leading-loose">
+	<p class="text-black/40 leading-loose">
 		Created by <a href="https://barvian.me" class="whitespace-nowrap underline underline-offset-[0.25em] text-black  hover:opacity-80">Maxwell Barvian</a>, with some math help by <a class="text-black  hover:opacity-80 whitespace-nowrap underline underline-offset-[0.25em]" href="https://www.linkedin.com/in/zach-barvian-5aa406113">Zach Barvian</a>.<br/>
 		Initial accessibility observations made by <a class="whitespace-nowrap underline underline-offset-[0.25em] text-black  hover:opacity-80" href="https://adrianroselli.com/2019/12/responsive-type-and-zoom.html">Adrian Roselli</a>.
 	</p>
