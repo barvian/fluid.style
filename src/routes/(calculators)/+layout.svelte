@@ -8,6 +8,7 @@
 	import copy from 'copy-to-clipboard'
 	import { writable, type Writable } from 'svelte/store'
 	import { resize } from '$lib/actions'
+	import { browser } from '$app/environment'
 	
 	$: type = $page.url.pathname === '/type'
 	let min = persistable(2, 'min'), max = persistable(5, 'max'),
@@ -16,11 +17,12 @@
 
 	let zoom = 1, prefWidth: Writable<number> = writable(), actualWidth: number, resizing = writable(false)
 	$: if (actualWidth) $prefWidth = actualWidth
+	const mac = browser && /(Mac OS)|(Macintosh)/i.test(navigator.userAgent)
 	function handleKeydown(e: KeyboardEvent) {
-		if ((e.metaKey || e.ctrlKey) && e.key === '=') {
+		if ((mac ? e.metaKey : e.ctrlKey) && e.key === '=') {
 			e.preventDefault()
 			zoom = 5
-		} else if ((e.metaKey || e.ctrlKey) && (e.key === '-' || e.key === '0')) {
+		} else if ((mac ? e.metaKey : e.ctrlKey) && (e.key === '-' || e.key === '0')) {
 			e.preventDefault()
 			zoom = 1
 		}
