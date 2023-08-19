@@ -7,6 +7,6 @@
 	if (!e.metaKey && !e.ctrlKey) e.stopPropagation()
 }} class="outline-none text-[length:--computed-size] leading-[1.1] font-bold text-center">
 	An
-	<span class="text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 to-cyan-500">accessible</span>
+	<span contenteditable="false" class="text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 to-cyan-500">accessible</span>
 	fluid type generator
 </h1>
