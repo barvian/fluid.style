@@ -78,7 +78,7 @@
 					{/if}
 					<div class="bg-neutral-125/60 backdrop-blur-[4px] py-2 px-3">
 						<span class={inViewportRange && zoom >= 5 ? 'text-red-500 font-medium' : ''}>
-							{to100th(clamp($min*zoom, intercept*zoom + slope*w, $max*zoom))}{$unit}
+							{to100th(clamp(Math.min($min,$max)*zoom, intercept*zoom + slope*w, Math.max($max,$min)*zoom))}{$unit}
 							@
 						</span>
 						<span class={inViewportRange ? 'text-red-500 font-medium' : ''}>{to10th(w)}{$unit}</span>
