@@ -48,12 +48,12 @@
 	<meta name="description" content="Generate responsive type or spacing CSS that meets accessibility requirements." />
 </svelte:head>
 
-<div class="flex flex-col min-h-[max(100vh,35rem)]">
-	<nav class="flex items-center justify-center gap-2 mb-[6vh] mt-[3vh]">
+<div class="flex flex-col min-h-screen">
+	<nav class="flex items-center justify-center gap-2 mb-[max(6vh,theme(spacing.8))] mt-[max(3vh,theme(spacing.5))]">
 		<NavItem href="/type" shortcut="T">Type</NavItem>
 		<NavItem href="/spacing" shortcut="S">Spacing</NavItem>
 	</nav>
-	<header class="flex items-stretch border-y flex-1 border-neutral-150 [&:has(button:hover)_button]:bg-neutral-250 [&:has(button:hover)]:border-neutral-250 mx-auto max-w-[92%] min-w-[15rem] {actualWidth ? 'w-min' : 'w-full'}">
+	<header class="flex items-stretch border-y flex-1 min-h-[10rem] border-neutral-150 [&:has(button:hover)_button]:bg-neutral-250 [&:has(button:hover)]:border-neutral-250 mx-auto max-w-[92%] min-w-[15rem] {actualWidth ? 'w-min' : 'w-full'}">
 		<button use:resize={{ direction: 'right', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth }} tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5"><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
 		<div class="@container flex-1 relative overflow-hidden" bind:clientWidth={actualWidth} style:width={$prefWidth == null ? '100%' : $prefWidth+'px'} style:--computed-size="clamp({to1000th(Math.min($min, $max))}{$unit}*{zoom}, {to1000th(intercept)}{$unit}*{zoom} + {to1000th(slope*100)}cqw, {to1000th(Math.max($min, $max))}{$unit}*{zoom})">
 			<div class="absolute inset-0 overflow-y-auto">
@@ -88,7 +88,7 @@
 		</div>
 		<button use:resize={{ direction: 'left', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth }}  tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5"><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
 	</header>
-	<main class="@container mt-[8vh] mb-[6vh]">
+	<main class="@container mt-[max(8vh,theme(spacing.12))] mb-[max(6vh,theme(spacing.8))]">
 		<form class="grid grid-cols-2 relative [--rounded:clamp(1rem,0.739rem_+_1.304vw,1.75rem)] max-w-4xl mx-auto before:absolute before:-inset-x-[10%] before:-inset-y-[80%] before:bg-gradients before:-z-[2] before:blur-[100px] before:pointer-events-none before:saturate-150 after:bg-white after:absolute after:inset-0 after:-z-[1] after:rounded-[--rounded] after:shadow-2xl">
 			<fieldset class="md:flex items-center gap-[3%] p-[clamp(1rem,0.652rem_+_1.739vw,2rem)]">
 				<Number class="max-md:mb-2" label="Min size" id="min-size" bind:value={$min} bind:unit={$unit} />
@@ -130,7 +130,7 @@
 		</form>
 	</main>
 </div>
-<footer class="text-center mt-[3vh] mb-[8vh] relative">
+<footer class="text-center mt-mt-[max(3vh,theme(spacing.5))] mb-[max(8vh,theme(spacing.12))] relative">
 	<p class="text-neutral-450 leading-loose">
 		Created by <a href="https://barvian.me" class="whitespace-nowrap underline underline-offset-[0.25em] text-black  hover:opacity-80">Maxwell Barvian</a>, with some math help by <a class="text-black  hover:opacity-80 whitespace-nowrap underline underline-offset-[0.25em]" href="https://www.linkedin.com/in/zach-barvian-5aa406113">Zach Barvian</a>.<br/>
 		Initial accessibility observations made by <a class="whitespace-nowrap underline underline-offset-[0.25em] text-black  hover:opacity-80" href="https://adrianroselli.com/2019/12/responsive-type-and-zoom.html">Adrian Roselli</a>.
