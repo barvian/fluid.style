@@ -27,12 +27,12 @@
     <div class="flex items-stretch mt-1 relative border border-neutral-200 focus-within:border-black">
         <input type="number" {id} class="flex-1 w-full py-[0.5em] pl-[0.75em] pr-0 text-[clamp(1rem,0.826rem_+_0.87vw,1.5rem)] outline-none" bind:value min="0" />
         <div class="relative flex items-stretch">
-            <select class="absolute inset-0 appearance-none" id={id+'-unit'} aria-describedby={id+'-tooltip'} on:change|once={changedUnits > 1 ? undefined : onUnitChange} bind:value={unit} tabindex={unitTabbable ? undefined : -1}>
+            <select class="absolute inset-0 appearance-none outline-none peer" id={id+'-unit'} aria-describedby={id+'-tooltip'} on:change|once={changedUnits > 1 ? undefined : onUnitChange} bind:value={unit} tabindex={unitTabbable ? undefined : -1}>
                 {#each UNITS as u}
                     <option selected={unit === u}>{u}</option>
                 {/each}
             </select>
-            <span class="relative flex items-center bg-white pointer-events-none text-[clamp(0.875rem,0.745rem_+_0.652vw,1.25rem)] gap-[0.333em] pr-[0.5em] text-neutral-600">
+            <span class="relative flex items-center pl-[0.35em] bg-white pointer-events-none peer-focus-visible:outline peer-focus-visible:outline-2 text-[clamp(0.875rem,0.745rem_+_0.652vw,1.25rem)] gap-[0.333em] pr-[0.5em] text-neutral-600">
                 {unit}
                 <svg class="w-2.5" viewBox="0 0 10 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 10L5 14L1 10" stroke="black" vector-effect="non-scaling-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
