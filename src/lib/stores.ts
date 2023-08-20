@@ -1,8 +1,7 @@
 import { get, writable, type Writable } from "svelte/store";
 import { page } from "$app/stores"
 import { browser } from "$app/environment";
-import { onDestroy, onMount } from "svelte";
-import { get_current_component } from 'svelte/internal'
+import { onMount } from "svelte";
 
 // Persist value as a search param
 export function paramable<T>(val: T, param: string): Writable<T> {
@@ -34,14 +33,21 @@ export function paramable<T>(val: T, param: string): Writable<T> {
 // Persist value in session storage
 export function sessionable(initVal: string, id: string): Writable<string> {
     const store = writable(initVal)
-    onDestroy(() => {
-        if (!browser) return
-        sessionStorage.setItem(id, get(store))
-    })
+    function onVisibilityChange() {
+        if (document.visibilityState === 'hidden') {
+            sessionStorage.setItem(id, get(store))
+        }
+    }
     onMount(() => {
         if (!browser) return
         const saved = sessionStorage.getItem(id)
         if (saved) store.set(saved)
+        document.addEventListener('visibilitychange', onVisibilityChange)
+
+        return () => {
+            document.removeEventListener('visibilitychange', onVisibilityChange)
+            sessionStorage.setItem(id, get(store))
+        }
     })
 
     return {
