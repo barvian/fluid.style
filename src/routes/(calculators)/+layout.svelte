@@ -11,7 +11,7 @@
 	import { browser } from '$app/environment'
 	
 	$: type = $page.url.pathname === '/type'
-	let min = paramable(2, 'min'), max = paramable(5, 'max'),
+	let min = paramable(2.25, 'min'), max = paramable(4.5, 'max'),
 	minBP = paramable(20, 'min-bp'), maxBP = paramable(77.5, 'max-bp')
 	let unit = paramable<Unit>('rem', 'unit')
 
