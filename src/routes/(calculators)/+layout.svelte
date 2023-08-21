@@ -92,7 +92,7 @@
 		<button use:resize={{ direction: 'left', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth, resizing }}  tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5" class:bg-neutral-250={$resizing}><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
 	</header>
 	<main class="@container mt-[max(8vh,theme(spacing.12))] mb-[max(6vh,theme(spacing.8))]">
-		<form class="grid grid-cols-2 relative [--rounded:clamp(1rem,0.739rem_+_1.304vw,1.75rem)] max-w-4xl mx-auto before:absolute before:-inset-x-[10%] before:-inset-y-[80%] before:bg-gradients before:-z-[2] before:blur-[100px] before:pointer-events-none before:saturate-150 after:bg-white after:absolute after:inset-0 after:-z-[1] after:rounded-[--rounded] after:shadow-2xl">
+		<form class="grid grid-cols-2 relative [--rounded:clamp(1rem,0.739rem_+_1.304vw,1.75rem)] max-w-4xl mx-auto before:absolute before:-inset-x-[10%] before:-top-[100%] before:-bottom-[80%] before:bg-gradients before:-z-[2] before:blur-[100px] before:pointer-events-none0 after:bg-white after:absolute after:inset-0 after:-z-[1] after:rounded-[--rounded] after:shadow-2xl">
 			<fieldset class="md:flex items-center gap-[3%] p-[clamp(1rem,0.652rem_+_1.739vw,2rem)]">
 				<Number class="max-md:mb-2" label="Min size" id="min-size" bind:value={$min} bind:unit={$unit} />
 				<span class="inline md:inline-block md:mt-5 md:text-neutral-450 md:text-2xl">@</span>
