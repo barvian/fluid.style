@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss'
 import plugin from 'tailwindcss/plugin'
 import containerQueryPlugin from '@tailwindcss/container-queries'
+import fluidPlugin from '../packages/tailwind/src'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
 export default {
@@ -52,6 +53,7 @@ export default {
 	},
 	plugins: [
 		containerQueryPlugin,
+		fluidPlugin,
 		plugin(({ addVariant, e }) => {
 			addVariant('current', '&[aria-current="page"]')
 			addVariant('group-current', ':merge(.group)[aria-current="page"] &')
