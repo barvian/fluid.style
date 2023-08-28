@@ -8,6 +8,7 @@ import log from 'tailwindcss/lib/util/log'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
 const DEFAULT_SCREEN_SCRUBBER = '100vw'
+const DEFAULT_CONTAINER_SCRUBBER = '100cqw'
 
 export type ThemeConfigFluid = Partial<{
     defaultFromScreen: string,
@@ -20,23 +21,25 @@ export type ThemeConfigFluid = Partial<{
 /**
  * Base plugin, which adds fluid versions of compatible core plugins.
  */
-export default plugin((api: PluginAPI) => {
-    const { theme, corePlugins: corePluginEnabled } = api
+export default plugin((_api: PluginAPI) => {
+    const { theme, corePlugins: corePluginEnabled } = _api
     const context = getContext(theme)
 
     // By default, add fluid versions for enabled core plugins
+    const api = interceptUtilities(_api, {
+        addOriginal: false,
+        transformValue(val, util) {
+            if (util === 'text' && Array.isArray(val)) return val[0]
+        }
+    }, context)
     Object.entries(corePlugins).forEach(([name, _p]) => {
         if (!corePluginEnabled(name)) return
         const p = _p as PluginCreator
-        p(interceptUtilities(api, {
-            addOriginal: false,
-            transformValue(val, util) {
-                if (util === 'text' && Array.isArray(val)) return val[0]
-            }
-        }, context))
+        p(api)
     })
 
     // And ~screen / ~container that affect all utilities
+    addConfigUtilities(_api, context)
 })
 
 /**
@@ -51,15 +54,15 @@ type InterceptOptions = Partial<{
 function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
     transformValue
-}: InterceptOptions = {}, {
-    screens, containers,
-    preferContainer,
-    defaultFromScreen, defaultToScreen,
-    defaultFromContainer, defaultToContainer
-}: Context): PluginAPI {
+}: InterceptOptions = {}, context: Context): PluginAPI {
+    const { 
+        preferContainer,
+        defaultFromScreen, defaultToScreen,
+        defaultFromContainer, defaultToContainer
+    } = context
     const defaultFromBP = preferContainer ? defaultFromContainer : defaultFromScreen
     const defaultToBP = preferContainer ? defaultToContainer : defaultToScreen
-    
+
     const matchUtilities: PluginAPI['matchUtilities'] = (utilities, options) => {
         // Add original
         if (addOriginal) api.matchUtilities(utilities, options)
@@ -94,7 +97,7 @@ function interceptUtilities(api: PluginAPI, {
                 const fromBPNumber = `var(--fluid-${util}-from-bp,var(--fluid-from-bp,${defaultFromBP.number}))`
                 const fromBPLength = `${fromBPNumber}*1${unit}`
                 const toBPNumber = `var(--fluid-${util}-to-bp,var(--fluid-to-bp,${defaultToBP.number}))`
-                const scrubber = `var(--fluid-${util}-scrubber,var(--fluid-scrubber,${preferContainer ? '100cq' : DEFAULT_SCREEN_SCRUBBER}))`
+                const scrubber = `var(--fluid-${util}-scrubber,var(--fluid-scrubber,${preferContainer ? DEFAULT_CONTAINER_SCRUBBER : DEFAULT_SCREEN_SCRUBBER}))`
                 const min = `${Math.min(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
                 const max = `${Math.max(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
                 const delta = to.number - from.number
@@ -110,30 +113,56 @@ function interceptUtilities(api: PluginAPI, {
             modifiers: options?.values ?? {} // must be at least {} or else Tailwind won't allow any modifiers
         })
 
-        // Add -screen utility
-        api.matchUtilities(Object.fromEntries(Object.keys(utilities).map((util) =>
-            [`~${util}-screen`, (_fromBP, { modifier: _toBP }) => {
-                const fromBP = parseLength(_fromBP)
-                const toBP = parseLength(_toBP ?? defaultToScreen.raw) // Tailwind doesn't use default for modifiers, it just passes it as null
-                if (!fromBP || !toBP) {
-                    log.warn('non-lengths', [
-                        'Fluid utilities can only work with length values'
-                    ])
-                    return null
-                }
-                return {
-                    [`--fluid-${util}-from-bp`]: _fromBP !== defaultFromScreen.raw ? fromBP.number+'' : null,
-                    [`--fluid-${util}-to-bp`]: _toBP && toBP.number+'',
-                    [`--fluid-${util}-scrubber`]: preferContainer ? DEFAULT_SCREEN_SCRUBBER : null
-                }
-            }]
-        )), {
-            values: { ...screens, DEFAULT: defaultFromScreen.raw },
-            modifiers: { ...screens }
-        })
+        // Add -screen and -container utilities
+        addConfigUtilities(api, context, Object.keys(utilities))
     }
 
     return { ...api, matchUtilities, matchComponents: matchUtilities }
+}
+
+/**
+ * Add -screen and -container utilities
+ */
+function addConfigUtilities(api: PluginAPI, context: Context, utilities?: string[]) {
+    const { preferContainer } = context
+    
+    function addUtilities(type: 'screen' | 'container') {
+        const bps = context[type === 'screen' ? 'screens' : 'containers']
+        const defaultFromBP = context[`defaultFrom${type === 'screen' ? 'Screen' : 'Container'}`]
+        const defaultToBP = context[`defaultTo${type === 'screen' ? 'Screen' : 'Container'}`]
+
+        const utility = (util?: string) => (_fromBP: string, { modifier: _toBP}: { modifier: string | null }) => {
+            const fromBP = parseLength(_fromBP)
+            const toBP = parseLength(_toBP ?? defaultToBP.raw) // Tailwind doesn't use default for modifiers, it just passes it as null
+            if (!fromBP || !toBP) {
+                log.warn('non-lengths', [
+                    'Fluid utilities can only work with length values'
+                ])
+                return null
+            }
+            const prefix = util ? util+'-' : ''
+            return {
+                [`--fluid-${prefix}scrubber`]: type === 'container'
+                    ? (preferContainer ? null : DEFAULT_CONTAINER_SCRUBBER)
+                    : (preferContainer ? DEFAULT_SCREEN_SCRUBBER : null),
+                // You always have to set these, because it could be in a media query i.e.
+                // ~p-4/8 ~p-screen/md md:~p-8/12 md:~p-screen-md
+                //         ^ (1)                      ^ if this doesn't overwrite the toBP, it'll still be md from (1)
+                [`--fluid-${prefix}from-bp`]: fromBP.number+'',
+                [`--fluid-${prefix}to-bp`]: toBP.number+'',
+            }
+        }
+        api.matchUtilities(utilities
+            ? Object.fromEntries(utilities.map((util) => [`~${util}-${type}`, utility(util)]))
+            : { [`~${type}`]: utility() }
+        , {
+            values: { ...bps, DEFAULT: defaultFromBP.raw },
+            modifiers: { ...bps }
+        })
+    }
+
+    addUtilities('screen')
+    addUtilities('container')
 }
 
 function getContext(theme: PluginAPI['theme']) {
