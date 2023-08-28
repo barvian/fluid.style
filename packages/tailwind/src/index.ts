@@ -25,7 +25,12 @@ export default plugin((api: PluginAPI) => {
     Object.entries(corePlugins).forEach(([name, _p]) => {
         if (!corePluginEnabled(name)) return
         const p = _p as PluginCreator
-        p(interceptUtilities(api, { addOriginal: false }))
+        p(interceptUtilities(api, {
+            addOriginal: false,
+            processValue(val, util) {
+                if (util === 'text' && Array.isArray(val)) return val[0]
+            }
+        }))
     })
 })
 
@@ -33,7 +38,15 @@ export default plugin((api: PluginAPI) => {
  * Return a modified PluginAPI that intercepts calls to matchUtilities and matchComponents
  * to add fluidized versions of each
  */
-function interceptUtilities(api: PluginAPI, { addOriginal = true } = {}): PluginAPI {
+export type ProcessValueFn = (val: any, util: string) => string
+type InterceptOptions = Partial<{
+    addOriginal: boolean
+    processValue: ProcessValueFn
+}>
+function interceptUtilities(api: PluginAPI, {
+    addOriginal = true,
+    processValue
+}: InterceptOptions = {}): PluginAPI {
     const { from: fromBP, to: toBP, container } = getDefaultBreakpoints(api)
     const matchUtilities: PluginAPI['matchUtilities'] = (utilities, options) => {
         // Add original
@@ -44,19 +57,14 @@ function interceptUtilities(api: PluginAPI, { addOriginal = true } = {}): Plugin
         // Add fluid version
         api.matchUtilities(Object.fromEntries(Object.entries(utilities).map(([util, _fn]) =>
             [`~${util}`, function(_from, { modifier: _to }) {
-                console.log(util, _from, _to)
-                if (util === 'text' && Array.isArray(_from)) _from = _from[0]
-                if (util === 'text' && Array.isArray(_to)) _to = _to[0]
-
-                console.log(util, _from, _to)
                 if (!_from || !_to) {
                     log.warn('missing-values', [
                         'Fluid utilities require two values'
                     ])
                     return null
                 }
-                const from = typeof _from === 'string' ? parseLength(_from) : null
-                const to = typeof _to === 'string' ? parseLength(_to) : null
+                const from = parseLength(typeof _from === 'string' ? _from : processValue?.(_from, util))
+                const to = parseLength(typeof _to === 'string' ? _to : processValue?.(_to, util))
                 if (!from || !to) {
                     log.warn('non-lengths', [
                         'Fluid utilities can only work with length values'
@@ -160,7 +168,10 @@ export const defaultScreensInRems = Object.fromEntries(Object.entries(defaultThe
 /**
  * Create fluid versions for a plugin's utilities.
  */
-export const fluidize = ({ handler: _handler, config }: Plugin): Plugin => ({
-    handler: (api) => _handler(interceptUtilities(api)),
+export const fluidize = (
+    { handler: _handler, config }: Plugin,
+    options?: InterceptOptions
+): Plugin => ({
+    handler: (api) => _handler(interceptUtilities(api, options)),
     config
 })
