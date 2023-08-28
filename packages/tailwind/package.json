@@ -43,5 +43,9 @@
     "prettier": "^2.7.1",
     "tailwindcss": ">=3.2.0",
     "typescript": ">=5.0.0"
+  },
+  "dependencies": {
+    "filter-obj": "^5.1.0",
+    "map-obj": "^5.0.2"
   }
 }
