@@ -18,6 +18,8 @@ export type ThemeConfigFluid = Partial<{
     preferContainer: boolean
 }>
 
+type BreakpointType = 'container' | 'screen'
+
 /**
  * Base plugin, which adds fluid versions of compatible core plugins.
  */
@@ -126,7 +128,7 @@ function interceptUtilities(api: PluginAPI, {
 function addConfigUtilities(api: PluginAPI, context: Context, utilities?: string[]) {
     const { preferContainer } = context
     
-    function addUtilities(type: 'screen' | 'container', subtype?: 'h') {
+    function addUtilities(type: BreakpointType, subtype?: 'h') {
         const name = `${type}${subtype ? '-'+subtype : ''}`
         const bps = context[type === 'screen' ? 'screens' : 'containers']
         const defaultFromBP = context[`defaultFrom${type === 'screen' ? 'Screen' : 'Container'}`]
@@ -174,7 +176,7 @@ function addConfigUtilities(api: PluginAPI, context: Context, utilities?: string
 function getContext(theme: PluginAPI['theme']) {
     const fluid: ThemeConfigFluid = theme('fluid') ?? {}
 
-    function getBreakpoints(bpsType: 'container' | 'screen') {
+    function getBreakpoints(bpsType: BreakpointType) {
         const bpsKey = bpsType === 'container' ? 'containers' : 'screens'
         const rawBps = theme(bpsKey) ?? {}
 
