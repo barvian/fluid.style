@@ -8,13 +8,16 @@ import log from 'tailwindcss/lib/util/log'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
 export type ThemeConfigFluid = Partial<{
-    defaultMinScreen: string,
-    defaultMaxScreen: string,
-    defaultMinContainer: string,
-    defaultMaxContainer: string,
+    defaultFromScreen: string,
+    defaultToScreen: string,
+    defaultFromContainer: string,
+    defaultToContainer: string,
     preferContainer: boolean
 }>
 
+/**
+ * Base plugin, which adds fluid versions of compatible core plugins.
+ */
 export default plugin((api: PluginAPI) => {
     const { corePlugins: corePluginEnabled } = api
 
@@ -26,8 +29,12 @@ export default plugin((api: PluginAPI) => {
     })
 })
 
+/**
+ * Return a modified PluginAPI that intercepts calls to matchUtilities and matchComponents
+ * to add fluidized versions of each
+ */
 function interceptUtilities(api: PluginAPI, { addOriginal = true } = {}): PluginAPI {
-    const { min: minBP, max: maxBP, container } = getDefaultBreakpoints(api)
+    const { from: fromBP, to: toBP, container } = getDefaultBreakpoints(api)
     const matchUtilities: PluginAPI['matchUtilities'] = (utilities, options) => {
         // Add original
         if (addOriginal) api.matchUtilities(utilities, options)
@@ -56,28 +63,29 @@ function interceptUtilities(api: PluginAPI, { addOriginal = true } = {}): Plugin
                     ])
                     return null
                 }
-                if (new Set([minBP.unit, maxBP.unit, from.unit, to.unit]).size > 1) {
+                if (new Set([fromBP.unit, toBP.unit, from.unit, to.unit]).size > 1) {
                     log.warn('mismatching-units', [
                         `Fluid utilities' value units must match breakpoint units`
                     ])
                     return null
                 }
 
-                const minBPNumber = `var(--fluid-${util}-min-bp,var(--fluid-min-bp,${minBP.number}))`
-                const minBPLength = `${minBPNumber}*1${minBP.unit}`
-                const maxBPNumber = `var(--fluid-${util}-max-bp,var(--fluid-max-bp,${maxBP.number}))`
+                const fromBPNumber = `var(--fluid-${util}-from-bp,var(--fluid-from-bp,${fromBP.number}))`
+                const fromBPLength = `${fromBPNumber}*1${fromBP.unit}`
+                const toBPNumber = `var(--fluid-${util}-to-bp,var(--fluid-to-bp,${toBP.number}))`
                 const scrubber = `var(--fluid-${util}-scrubber,var(--fluid-scrubber,${container ? '100cq' : '100vw'}))`
                 const min = `${Math.min(from.number, to.number)}${from.unit}` // CSS requires the min < max in a clamp
                 const max = `${Math.max(from.number, to.number)}${to.unit}` // CSS requires the min < max in a clamp
                 const delta = to.number - from.number
                 return _fn(
-                    `clamp(${min},${from.number}${from.unit} + (${scrubber} - ${minBPLength})/(${maxBPNumber} - ${minBPNumber})${delta === 1 ? '' : `*${delta}`/* save a multiplication by 1 */},${max})`,
+                    `clamp(${min},${from.number}${from.unit} + (${scrubber} - ${fromBPLength})/(${toBPNumber} - ${fromBPNumber})${delta === 1 ? '' : `*${delta}`/* save a multiplication by 1 */},${max})`,
                     { modifier: null } // don't pass along the modifier
                 )
             } satisfies typeof _fn]
         )), {
             ...options,
-            // @ts-expect-error
+            supportsNegativeValues: false, // b/c -~ is super ugly and b/c they don't affect the modifier values which is confusing
+            // @ts-expect-error TS can't infer that this is actually all string values even though we checked
             modifiers: options?.values ?? {} // must be at least {} or else Tailwind won't allow any modifiers
         })
     }
@@ -85,6 +93,9 @@ function interceptUtilities(api: PluginAPI, { addOriginal = true } = {}): Plugin
     return { ...api, matchUtilities, matchComponents: matchUtilities }
 }
 
+/**
+ * This is separate from makeClamp for performance reasons
+ */
 function getDefaultBreakpoints({ theme }: PluginAPI) {
     const fluid: ThemeConfigFluid = theme('fluid') ?? {}
     const container = fluid.preferContainer === true
@@ -92,11 +103,11 @@ function getDefaultBreakpoints({ theme }: PluginAPI) {
     const breakpoints = theme(breakpointsKey) ?? {}
 
     let sortedBreakpoints: CSSLength[] | undefined
-    function getDefaultBreakpoint(type: 'min' | 'max') {
+    function getDefaultBreakpoint(type: 'from' | 'to') {
         const key = container
             // These have to be literal strings (not a template string) for TS:
-            ? (type === 'min' ? 'defaultMinContainer' : 'defaultMaxContainer')
-            : (type === 'min' ? 'defaultMinScreen' : 'defaultMaxScreen')
+            ? (type === 'from' ? 'defaultFromContainer' : 'defaultToContainer')
+            : (type === 'from' ? 'defaultFromScreen' : 'defaultToScreen')
         const raw = fluid[key]
 
         if (typeof raw === 'string') {
@@ -123,12 +134,12 @@ function getDefaultBreakpoints({ theme }: PluginAPI) {
 
             return vals.sort((a, b) => a.number - b.number)
         })()
-        return sortedBreakpoints[type === 'min' ? 0 : sortedBreakpoints.length-1]
+        return sortedBreakpoints[type === 'from' ? 0 : sortedBreakpoints.length-1]
     }
 
     return {
-        min: getDefaultBreakpoint('min'),
-        max: getDefaultBreakpoint('max'),
+        from: getDefaultBreakpoint('from'),
+        to: getDefaultBreakpoint('to'),
         container
     }
 }    
@@ -147,7 +158,7 @@ export const defaultScreensInRems = Object.fromEntries(Object.entries(defaultThe
 })) as typeof defaultTheme.screens
 
 /**
- * Creates fluid versions for a plugin's utilities.
+ * Create fluid versions for a plugin's utilities.
  */
 export const fluidize = ({ handler: _handler, config }: Plugin): Plugin => ({
     handler: (api) => _handler(interceptUtilities(api)),
