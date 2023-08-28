@@ -1,12 +1,19 @@
 import type { Config } from 'tailwindcss'
 import plugin from 'tailwindcss/plugin'
 import containerQueryPlugin from '@tailwindcss/container-queries'
-import fluidPlugin from '../packages/tailwind/src'
-import defaultTheme from 'tailwindcss/defaultTheme'
+import fluidPlugin, { buildFluidExtract, defaultScreensInRems, fluidize } from '../packages/tailwind/src'
+const { '2xl': _, ...screens } = defaultScreensInRems
 
 export default {
-	content: ['./src/**/*.{html,js,svelte,ts}'],
+	content: {
+		files: ['./src/**/*.{html,js,svelte,ts}'],
+		extract: buildFluidExtract()
+	},
 	theme: {
+		screens: {
+			...screens,
+			xs: '30rem'
+		},
 		extend: {
 			borderColor: {
 				DEFAULT: 'currentColor'
@@ -14,14 +21,8 @@ export default {
 			spacing: {
 				'4.5': '1.125rem'
 			},
-			screens: {
-				xs: '480px'
-			},
 			fontFamily: {
 				// sans: ['Inter var', 'sans-serif']
-			},
-			fontSize: {
-				'lg-md': '2rem'
 			},
 			colors: {
 				neutral: {
@@ -52,9 +53,9 @@ export default {
 		}
 	},
 	plugins: [
-		containerQueryPlugin,
+		fluidize(containerQueryPlugin),
 		fluidPlugin,
-		plugin(({ addVariant, e }) => {
+		plugin(({ addVariant, matchUtilities }) => {
 			addVariant('current', '&[aria-current="page"]')
 			addVariant('group-current', ':merge(.group)[aria-current="page"] &')
 			addVariant('aria-hidden', '&[aria-hidden="true"]')
