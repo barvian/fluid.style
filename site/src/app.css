@@ -19,7 +19,7 @@
 	}
 	
 	h1 {
-		@apply max-md:text-xl max-xl:text-4xl ~rounded-b-[1rem]/[2rem]
+		@apply max-md:text-xl max-xl:text-4xl
 	}
 }
 
