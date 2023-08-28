@@ -21,12 +21,12 @@ export type ThemeConfigFluid = Partial<{
 /**
  * Base plugin, which adds fluid versions of compatible core plugins.
  */
-export default plugin((_api: PluginAPI) => {
-    const { theme, corePlugins: corePluginEnabled } = _api
+export default plugin((api: PluginAPI) => {
+    const { theme, corePlugins: corePluginEnabled } = api
     const context = getContext(theme)
 
     // By default, add fluid versions for enabled core plugins
-    const api = interceptUtilities(_api, {
+    const interceptedAPI = interceptUtilities(api, {
         addOriginal: false,
         transformValue(val, util) {
             if (util === 'text' && Array.isArray(val)) return val[0]
@@ -35,11 +35,11 @@ export default plugin((_api: PluginAPI) => {
     Object.entries(corePlugins).forEach(([name, _p]) => {
         if (!corePluginEnabled(name)) return
         const p = _p as PluginCreator
-        p(api)
+        p(interceptedAPI)
     })
 
     // And ~screen / ~container that affect all utilities
-    addConfigUtilities(_api, context)
+    addConfigUtilities(api, context)
 })
 
 /**
@@ -67,10 +67,10 @@ function interceptUtilities(api: PluginAPI, {
         // Add original
         if (addOriginal) api.matchUtilities(utilities, options)
         // Skip ones with types that don't include length or any
-        if (options?.type && !options.type.includes('length') && !options.type.includes('any')) return
+        if (options?.type && !options.type.includes('length')) return
         
         // Add fluid version
-        api.matchUtilities(Object.fromEntries(Object.entries(utilities).map(([util, _fn]) =>
+        api.matchUtilities(Object.fromEntries(Object.entries(utilities).map(([util, origFn]) =>
             [`~${util}`, function(_from, { modifier: _to }) {
                 if (!_from || !_to) {
                     log.warn('missing-values', [
@@ -101,11 +101,11 @@ function interceptUtilities(api: PluginAPI, {
                 const min = `${Math.min(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
                 const max = `${Math.max(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
                 const delta = to.number - from.number
-                return _fn(
+                return origFn(
                     `clamp(${min},${from.number}${unit} + (${scrubber} - ${fromBPLength})/(${toBPNumber} - ${fromBPNumber})${delta === 1 ? '' : `*${delta}`/* save a multiplication by 1 */},${max})`,
                     { modifier: null } // don't pass along the modifier
                 )
-            } satisfies typeof _fn]
+            } satisfies typeof origFn]
         )), {
             ...options,
             supportsNegativeValues: false, // b/c -~ is super ugly and b/c they don't affect the modifier values which is confusing
@@ -113,7 +113,7 @@ function interceptUtilities(api: PluginAPI, {
             modifiers: options?.values ?? {} // must be at least {} or else Tailwind won't allow any modifiers
         })
 
-        // Add -screen and -container utilities
+        // Add -screen and -container 
         addConfigUtilities(api, context, Object.keys(utilities))
     }
 
@@ -130,7 +130,7 @@ function addConfigUtilities(api: PluginAPI, context: Context, utilities?: string
         const bps = context[type === 'screen' ? 'screens' : 'containers']
         const defaultFromBP = context[`defaultFrom${type === 'screen' ? 'Screen' : 'Container'}`]
         const defaultToBP = context[`defaultTo${type === 'screen' ? 'Screen' : 'Container'}`]
-
+        
         const utility = (util?: string) => (_fromBP: string, { modifier: _toBP}: { modifier: string | null }) => {
             const fromBP = parseLength(_fromBP)
             const toBP = parseLength(_toBP ?? defaultToBP.raw) // Tailwind doesn't use default for modifiers, it just passes it as null
@@ -145,7 +145,8 @@ function addConfigUtilities(api: PluginAPI, context: Context, utilities?: string
                 [`--fluid-${prefix}scrubber`]: type === 'container'
                     ? (preferContainer ? null : DEFAULT_CONTAINER_SCRUBBER)
                     : (preferContainer ? DEFAULT_SCREEN_SCRUBBER : null),
-                // You always have to set these, because it could be in a media query i.e.
+                
+                // You always have to set these next two, because it could be in a media query i.e.
                 // ~p-4/8 ~p-screen/md md:~p-8/12 md:~p-screen-md
                 //         ^ (1)                      ^ if this doesn't overwrite the toBP, it'll still be md from (1)
                 [`--fluid-${prefix}from-bp`]: fromBP.number+'',
