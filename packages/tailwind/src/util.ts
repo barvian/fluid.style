@@ -2,7 +2,8 @@ import { length } from 'tailwindcss/src/util/dataTypes'
 
 export type CSSLength = {
     number: number
-    unit?: string // only undefined if number is 0
+    unit?: string // only undefined if number is 0,
+    raw: string
 }
 
 /**
@@ -15,6 +16,7 @@ export function parseLength(len?: string | null): CSSLength | null {
     const match = len.match(/^(.*?)([a-z]+)$/)
     return {
         number: parseFloat(match?.[1]!),
-        unit: match?.[2]!
+        unit: match?.[2]!,
+        raw: len
     }
 }

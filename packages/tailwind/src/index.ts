@@ -7,6 +7,8 @@ import { length } from 'tailwindcss/src/util/dataTypes'
 import log from 'tailwindcss/lib/util/log'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
+const DEFAULT_SCREEN_SCRUBBER = '100vw'
+
 export type ThemeConfigFluid = Partial<{
     defaultFromScreen: string,
     defaultToScreen: string,
@@ -50,8 +52,14 @@ function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
     transformValue
 }: InterceptOptions = {}, {
-    defaultFromBP, defaultToBP, preferContainer
+    screens, containers,
+    preferContainer,
+    defaultFromScreen, defaultToScreen,
+    defaultFromContainer, defaultToContainer
 }: Context): PluginAPI {
+    const defaultFromBP = preferContainer ? defaultFromContainer : defaultFromScreen
+    const defaultToBP = preferContainer ? defaultToContainer : defaultToScreen
+    
     const matchUtilities: PluginAPI['matchUtilities'] = (utilities, options) => {
         // Add original
         if (addOriginal) api.matchUtilities(utilities, options)
@@ -86,12 +94,12 @@ function interceptUtilities(api: PluginAPI, {
                 const fromBPNumber = `var(--fluid-${util}-from-bp,var(--fluid-from-bp,${defaultFromBP.number}))`
                 const fromBPLength = `${fromBPNumber}*1${unit}`
                 const toBPNumber = `var(--fluid-${util}-to-bp,var(--fluid-to-bp,${defaultToBP.number}))`
-                const scrubber = `var(--fluid-${util}-scrubber,var(--fluid-scrubber,${preferContainer ? '100cq' : '100vw'}))`
+                const scrubber = `var(--fluid-${util}-scrubber,var(--fluid-scrubber,${preferContainer ? '100cq' : DEFAULT_SCREEN_SCRUBBER}))`
                 const min = `${Math.min(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
                 const max = `${Math.max(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
                 const delta = to.number - from.number
                 return _fn(
-                    `clamp(${min},${from.number}${from.unit} + (${scrubber} - ${fromBPLength})/(${toBPNumber} - ${fromBPNumber})${delta === 1 ? '' : `*${delta}`/* save a multiplication by 1 */},${max})`,
+                    `clamp(${min},${from.number}${unit} + (${scrubber} - ${fromBPLength})/(${toBPNumber} - ${fromBPNumber})${delta === 1 ? '' : `*${delta}`/* save a multiplication by 1 */},${max})`,
                     { modifier: null } // don't pass along the modifier
                 )
             } satisfies typeof _fn]
@@ -101,6 +109,28 @@ function interceptUtilities(api: PluginAPI, {
             // @ts-expect-error TS can't infer that this is actually all string values even though we checked
             modifiers: options?.values ?? {} // must be at least {} or else Tailwind won't allow any modifiers
         })
+
+        // Add -screen utility
+        api.matchUtilities(Object.fromEntries(Object.keys(utilities).map((util) =>
+            [`~${util}-screen`, (_fromBP, { modifier: _toBP }) => {
+                const fromBP = parseLength(_fromBP)
+                const toBP = parseLength(_toBP ?? defaultToScreen.raw) // Tailwind doesn't use default for modifiers, it just passes it as null
+                if (!fromBP || !toBP) {
+                    log.warn('non-lengths', [
+                        'Fluid utilities can only work with length values'
+                    ])
+                    return null
+                }
+                return {
+                    [`--fluid-${util}-from-bp`]: _fromBP !== defaultFromScreen.raw ? fromBP.number+'' : null,
+                    [`--fluid-${util}-to-bp`]: _toBP && toBP.number+'',
+                    [`--fluid-${util}-scrubber`]: preferContainer ? DEFAULT_SCREEN_SCRUBBER : null
+                }
+            }]
+        )), {
+            values: { ...screens, DEFAULT: defaultFromScreen.raw },
+            modifiers: { ...screens }
+        })
     }
 
     return { ...api, matchUtilities, matchComponents: matchUtilities }
@@ -108,49 +138,57 @@ function interceptUtilities(api: PluginAPI, {
 
 function getContext(theme: PluginAPI['theme']) {
     const fluid: ThemeConfigFluid = theme('fluid') ?? {}
-    const preferContainer = fluid.preferContainer === true
-    const breakpointsKey = preferContainer ? 'containers' : 'screens'
-    const breakpoints = theme(breakpointsKey) ?? {}
 
-    let sortedBreakpoints: CSSLength[] | undefined
-    function getDefaultBreakpoint(type: 'from' | 'to') {
-        const key = preferContainer
-            // These have to be literal strings (not a template string) for TS:
-            ? (type === 'from' ? 'defaultFromContainer' : 'defaultToContainer')
-            : (type === 'from' ? 'defaultFromScreen' : 'defaultToScreen')
-        const raw = fluid[key]
+    function getBreakpoints(bpsType: 'container' | 'screen') {
+        const bpsKey = bpsType === 'container' ? 'containers' : 'screens'
+        const rawBps = theme(bpsKey) ?? {}
 
-        if (typeof raw === 'string') {
-            const parsed = parseLength(breakpoints[raw] ?? raw)
-            if (!parsed) throw new Error(`Invalid value for \`theme.fluid.${key}\``)
-            return parsed
-        } else if (raw != null) {
-            throw new Error(`Invalid value for \`theme.fluid.${key}\``)
-        }
-
-        sortedBreakpoints ??= (() => {
-            // Get all "simple" vals
-            const vals = Object.values(breakpoints)
-                .filter(v => typeof v === 'string' && length(v))
-                .map(v => parseLength(v)!)
-            if (!vals.length) {
-                throw new Error(`Cannot resolve \`theme.fluid.${key}\` because there's no simple values in \`theme.${breakpointsKey}\``)
+        // Get all "simple" breakpoints (i.e. just a length, not an object)
+        const bps = Object.fromEntries(
+            Object.entries(rawBps).filter(([,v]) => typeof v === 'string' && length(v))
+        ) as Record<string, string> // TS can't infer based on the filter
+        
+        let sortedBreakpoints: CSSLength[]
+        function getDefaultBreakpoint(bpType: 'from' | 'to') {
+            const bpKey = bpsType === 'container'
+                // These have to be literal strings (not a template string) for TS:
+                ? (bpType === 'from' ? 'defaultFromContainer' : 'defaultToContainer')
+                : (bpType === 'from' ? 'defaultFromScreen' : 'defaultToScreen')
+            const rawBp = fluid[bpKey]
+    
+            if (typeof rawBp === 'string') {
+                const parsed = parseLength(rawBps[rawBp] ?? rawBp)
+                if (!parsed) throw new Error(`Invalid value for \`theme.fluid.${bpKey}\``)
+                return parsed
+            } else if (rawBp != null) {
+                throw new Error(`Invalid value for \`theme.fluid.${bpKey}\``)
             }
             
-            // Error if they have different units (can't sort that way)
-            if (new Set(vals.map(l => l.unit!)).size > 1) {
-                throw new Error(`Cannot resolve \`theme.fluid.${key}\` because \`theme.${breakpointsKey}\` contains values of different units`)
-            }
+            sortedBreakpoints ??= (() => {
+                const bpsVals = Object.values(bps)
+                if (!bpsVals.length) {
+                    throw new Error(`Cannot resolve \`theme.fluid.${bpKey}\` because there's no simple values in \`theme.${bpsKey}\``)
+                }
+                const parsedBpsVals = bpsVals.map(v => parseLength(v)!)
+                // Error if they have different units (can't sort that way)
+                if (new Set(parsedBpsVals.map(l => l.unit!)).size > 1) {
+                    throw new Error(`Cannot resolve \`theme.fluid.${bpKey}\` because \`theme.${bpsKey}\` contains values of different units`)
+                }
 
-            return vals.sort((a, b) => a.number - b.number)
-        })()
-        return sortedBreakpoints[type === 'from' ? 0 : sortedBreakpoints.length-1]
+                return parsedBpsVals.sort((a, b) => a.number - b.number)
+            })()
+            return sortedBreakpoints[bpType === 'from' ? 0 : sortedBreakpoints.length-1]
+        }
+
+        return { bps, defaultFromBP: getDefaultBreakpoint('from'), defaultToBP: getDefaultBreakpoint('to') }
     }
 
+    const { bps: screens, defaultFromBP: defaultFromScreen, defaultToBP: defaultToScreen } = getBreakpoints('screen')
+    const { bps: containers, defaultFromBP: defaultFromContainer, defaultToBP: defaultToContainer } = getBreakpoints('container')
     return {
-        defaultFromBP: getDefaultBreakpoint('from'),
-        defaultToBP: getDefaultBreakpoint('to'),
-        preferContainer
+        screens, defaultFromScreen, defaultToScreen,
+        containers, defaultFromContainer, defaultToContainer,
+        preferContainer: fluid.preferContainer === true
     }
 }
 type Context = ReturnType<typeof getContext>
