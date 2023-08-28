@@ -126,7 +126,8 @@ function interceptUtilities(api: PluginAPI, {
 function addConfigUtilities(api: PluginAPI, context: Context, utilities?: string[]) {
     const { preferContainer } = context
     
-    function addUtilities(type: 'screen' | 'container') {
+    function addUtilities(type: 'screen' | 'container', subtype?: 'h') {
+        const name = `${type}${subtype ? '-'+subtype : ''}`
         const bps = context[type === 'screen' ? 'screens' : 'containers']
         const defaultFromBP = context[`defaultFrom${type === 'screen' ? 'Screen' : 'Container'}`]
         const defaultToBP = context[`defaultTo${type === 'screen' ? 'Screen' : 'Container'}`]
@@ -142,10 +143,12 @@ function addConfigUtilities(api: PluginAPI, context: Context, utilities?: string
             }
             const prefix = util ? util+'-' : ''
             return {
-                [`--fluid-${prefix}scrubber`]: type === 'container'
-                    ? (preferContainer ? null : DEFAULT_CONTAINER_SCRUBBER)
-                    : (preferContainer ? DEFAULT_SCREEN_SCRUBBER : null),
-                
+                [`--fluid-${prefix}scrubber`]: {
+                    'screen': preferContainer ? DEFAULT_SCREEN_SCRUBBER : null,
+                    'screen-h': '100vh',
+                    'container': preferContainer ? null : DEFAULT_CONTAINER_SCRUBBER,
+                    'container-h': '100cqh'
+                }[name] ?? null,                
                 // You always have to set these next two, because it could be in a media query i.e.
                 // ~p-4/8 ~p-screen/md md:~p-8/12 md:~p-screen-md
                 //         ^ (1)                      ^ if this doesn't overwrite the toBP, it'll still be md from (1)
@@ -154,8 +157,8 @@ function addConfigUtilities(api: PluginAPI, context: Context, utilities?: string
             }
         }
         api.matchUtilities(utilities
-            ? Object.fromEntries(utilities.map((util) => [`~${util}-${type}`, utility(util)]))
-            : { [`~${type}`]: utility() }
+            ? Object.fromEntries(utilities.map((util) => [`~${util}-${name}`, utility(util)]))
+            : { [`~${name}`]: utility() }
         , {
             values: { ...bps, DEFAULT: defaultFromBP.raw },
             modifiers: { ...bps }
@@ -163,7 +166,9 @@ function addConfigUtilities(api: PluginAPI, context: Context, utilities?: string
     }
 
     addUtilities('screen')
+    addUtilities('screen', 'h')
     addUtilities('container')
+    addUtilities('container', 'h')
 }
 
 function getContext(theme: PluginAPI['theme']) {
