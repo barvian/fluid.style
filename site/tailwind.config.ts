@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss'
 import plugin from 'tailwindcss/plugin'
 import containerQueryPlugin from '@tailwindcss/container-queries'
-import fluidPlugin, { buildFluidExtract, defaultScreensInRems, fluidize } from '../packages/tailwind/src'
+import fluidPlugin, { buildFluidExtract, defaultScreensInRems } from '../packages/tailwind/src'
 const { '2xl': _, ...screens } = defaultScreensInRems
 
 export default {
@@ -53,7 +53,7 @@ export default {
 		}
 	},
 	plugins: [
-		fluidize(containerQueryPlugin),
+		containerQueryPlugin,
 		fluidPlugin,
 		plugin(({ addVariant, matchUtilities }) => {
 			addVariant('current', '&[aria-current="page"]')

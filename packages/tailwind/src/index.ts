@@ -19,7 +19,8 @@ export type ThemeConfigFluid = Partial<{
  * Base plugin, which adds fluid versions of compatible core plugins.
  */
 export default plugin((api: PluginAPI) => {
-    const { corePlugins: corePluginEnabled } = api
+    const { theme, corePlugins: corePluginEnabled } = api
+    const context = getContext(theme)
 
     // By default, add fluid versions for enabled core plugins
     Object.entries(corePlugins).forEach(([name, _p]) => {
@@ -30,7 +31,7 @@ export default plugin((api: PluginAPI) => {
             processValue(val, util) {
                 if (util === 'text' && Array.isArray(val)) return val[0]
             }
-        }))
+        }, context))
     })
 })
 
@@ -46,8 +47,9 @@ type InterceptOptions = Partial<{
 function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
     processValue
-}: InterceptOptions = {}): PluginAPI {
-    const { from: fromBP, to: toBP, container } = getDefaultBreakpoints(api)
+}: InterceptOptions = {}, {
+    defaultFromBP, defaultToBP, preferContainer
+}: Context): PluginAPI {
     const matchUtilities: PluginAPI['matchUtilities'] = (utilities, options) => {
         // Add original
         if (addOriginal) api.matchUtilities(utilities, options)
@@ -71,19 +73,20 @@ function interceptUtilities(api: PluginAPI, {
                     ])
                     return null
                 }
-                if (new Set([fromBP.unit, toBP.unit, from.unit, to.unit]).size > 1) {
+                if (new Set([defaultFromBP.unit, defaultToBP.unit, from.unit, to.unit]).size > 1) {
                     log.warn('mismatching-units', [
                         `Fluid utilities' value units must match breakpoint units`
                     ])
                     return null
                 }
+                const unit = from.unit // you can technically get it from any of the values
 
-                const fromBPNumber = `var(--fluid-${util}-from-bp,var(--fluid-from-bp,${fromBP.number}))`
-                const fromBPLength = `${fromBPNumber}*1${fromBP.unit}`
-                const toBPNumber = `var(--fluid-${util}-to-bp,var(--fluid-to-bp,${toBP.number}))`
-                const scrubber = `var(--fluid-${util}-scrubber,var(--fluid-scrubber,${container ? '100cq' : '100vw'}))`
-                const min = `${Math.min(from.number, to.number)}${from.unit}` // CSS requires the min < max in a clamp
-                const max = `${Math.max(from.number, to.number)}${to.unit}` // CSS requires the min < max in a clamp
+                const fromBPNumber = `var(--fluid-${util}-from-bp,var(--fluid-from-bp,${defaultFromBP.number}))`
+                const fromBPLength = `${fromBPNumber}*1${unit}`
+                const toBPNumber = `var(--fluid-${util}-to-bp,var(--fluid-to-bp,${defaultToBP.number}))`
+                const scrubber = `var(--fluid-${util}-scrubber,var(--fluid-scrubber,${preferContainer ? '100cq' : '100vw'}))`
+                const min = `${Math.min(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
+                const max = `${Math.max(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
                 const delta = to.number - from.number
                 return _fn(
                     `clamp(${min},${from.number}${from.unit} + (${scrubber} - ${fromBPLength})/(${toBPNumber} - ${fromBPNumber})${delta === 1 ? '' : `*${delta}`/* save a multiplication by 1 */},${max})`,
@@ -101,18 +104,15 @@ function interceptUtilities(api: PluginAPI, {
     return { ...api, matchUtilities, matchComponents: matchUtilities }
 }
 
-/**
- * This is separate from makeClamp for performance reasons
- */
-function getDefaultBreakpoints({ theme }: PluginAPI) {
+function getContext(theme: PluginAPI['theme']) {
     const fluid: ThemeConfigFluid = theme('fluid') ?? {}
-    const container = fluid.preferContainer === true
-    const breakpointsKey = container ? 'containers' : 'screens'
+    const preferContainer = fluid.preferContainer === true
+    const breakpointsKey = preferContainer ? 'containers' : 'screens'
     const breakpoints = theme(breakpointsKey) ?? {}
 
     let sortedBreakpoints: CSSLength[] | undefined
     function getDefaultBreakpoint(type: 'from' | 'to') {
-        const key = container
+        const key = preferContainer
             // These have to be literal strings (not a template string) for TS:
             ? (type === 'from' ? 'defaultFromContainer' : 'defaultToContainer')
             : (type === 'from' ? 'defaultFromScreen' : 'defaultToScreen')
@@ -146,11 +146,12 @@ function getDefaultBreakpoints({ theme }: PluginAPI) {
     }
 
     return {
-        from: getDefaultBreakpoint('from'),
-        to: getDefaultBreakpoint('to'),
-        container
+        defaultFromBP: getDefaultBreakpoint('from'),
+        defaultToBP: getDefaultBreakpoint('to'),
+        preferContainer
     }
-}    
+}
+type Context = ReturnType<typeof getContext>
 
 export { default as buildFluidExtract } from './extractor'
 
@@ -172,6 +173,6 @@ export const fluidize = (
     { handler: _handler, config }: Plugin,
     options?: InterceptOptions
 ): Plugin => ({
-    handler: (api) => _handler(interceptUtilities(api, options)),
+    handler: (api) => _handler(interceptUtilities(api, options, getContext(api.theme))),
     config
 })
