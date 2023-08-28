@@ -28,25 +28,27 @@ export default plugin((api: PluginAPI) => {
         const p = _p as PluginCreator
         p(interceptUtilities(api, {
             addOriginal: false,
-            processValue(val, util) {
+            transformValue(val, util) {
                 if (util === 'text' && Array.isArray(val)) return val[0]
             }
         }, context))
     })
+
+    // And ~screen / ~container that affect all utilities
 })
 
 /**
  * Return a modified PluginAPI that intercepts calls to matchUtilities and matchComponents
  * to add fluidized versions of each
  */
-export type ProcessValueFn = (val: any, util: string) => string
+export type ConvertValueFn = (val: any, util: string) => string | undefined | null
 type InterceptOptions = Partial<{
     addOriginal: boolean
-    processValue: ProcessValueFn
+    transformValue: ConvertValueFn
 }>
 function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
-    processValue
+    transformValue
 }: InterceptOptions = {}, {
     defaultFromBP, defaultToBP, preferContainer
 }: Context): PluginAPI {
@@ -65,8 +67,8 @@ function interceptUtilities(api: PluginAPI, {
                     ])
                     return null
                 }
-                const from = parseLength(typeof _from === 'string' ? _from : processValue?.(_from, util))
-                const to = parseLength(typeof _to === 'string' ? _to : processValue?.(_to, util))
+                const from = parseLength(typeof _from === 'string' ? _from : transformValue?.(_from, util))
+                const to = parseLength(typeof _to === 'string' ? _to : transformValue?.(_to, util))
                 if (!from || !to) {
                     log.warn('non-lengths', [
                         'Fluid utilities can only work with length values'
