@@ -1,14 +1,14 @@
 import plugin from 'tailwindcss/plugin'
 type Plugin = ReturnType<typeof plugin>
 import { corePlugins } from 'tailwindcss/lib/corePlugins'
-import { PluginAPI, PluginCreator, ThemeConfig } from 'tailwindcss/types/config'
+import { PluginAPI, PluginCreator } from 'tailwindcss/types/config'
 import { parseLength, type CSSLength } from './util'
 import { length } from 'tailwindcss/src/util/dataTypes'
 import log from 'tailwindcss/lib/util/log'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
-const DEFAULT_SCREEN_SCRUBBER = '100vw'
-const DEFAULT_CONTAINER_SCRUBBER = '100cqw'
+const SCREEN_SCRUBBER = '100vw'
+const CONTAINER_SCRUBBER = '100cqw'
 
 export type ThemeConfigFluid = Partial<{
     defaultFromScreen: string,
@@ -57,14 +57,7 @@ function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
     transformValue
 }: InterceptOptions = {}, context: Context): PluginAPI {
-    const { 
-        preferContainer,
-        defaultFromScreen, defaultToScreen,
-        defaultFromContainer, defaultToContainer
-    } = context
-    const defaultFromBP = preferContainer ? defaultFromContainer : defaultFromScreen
-    const defaultToBP = preferContainer ? defaultToContainer : defaultToScreen
-
+    const {  preferContainer, defaultFromBP, defaultToBP } = context
     const matchUtilities: PluginAPI['matchUtilities'] = (utilities, options) => {
         // Add original
         if (addOriginal) api.matchUtilities(utilities, options)
@@ -99,7 +92,7 @@ function interceptUtilities(api: PluginAPI, {
                 const fromBPNumber = `var(--fluid-${util}-from-bp,var(--fluid-from-bp,${defaultFromBP.number}))`
                 const fromBPLength = `${fromBPNumber}*1${unit}`
                 const toBPNumber = `var(--fluid-${util}-to-bp,var(--fluid-to-bp,${defaultToBP.number}))`
-                const scrubber = `var(--fluid-${util}-scrubber,var(--fluid-scrubber,${preferContainer ? DEFAULT_CONTAINER_SCRUBBER : DEFAULT_SCREEN_SCRUBBER}))`
+                const scrubber = `var(--fluid-${util}-scrubber,var(--fluid-scrubber,${preferContainer ? CONTAINER_SCRUBBER : SCREEN_SCRUBBER}))`
                 const min = `${Math.min(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
                 const max = `${Math.max(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
                 const delta = to.number - from.number
@@ -131,43 +124,60 @@ function interceptUtilities(api: PluginAPI, {
  * Add -screen and -container utilities
  */
 function addConfigUtilities(api: PluginAPI, context: Context, utilities?: string[]) {
-    const { preferContainer } = context
+    const { preferContainer, defaultFromBP, defaultToBP, defaultScrubber } = context
     
     function addUtilities(type: BreakpointType, subtype?: 'h') {
         const name = `${type}${subtype ? '-'+subtype : ''}`
         const bps = context[type === 'screen' ? 'screens' : 'containers']
-        const defaultFromBP = context[`defaultFrom${type === 'screen' ? 'Screen' : 'Container'}`]
-        const defaultToBP = context[`defaultTo${type === 'screen' ? 'Screen' : 'Container'}`]
         
         const utility = (util?: string) => (_fromBP: string, { modifier: _toBP}: { modifier: string | null }) => {
             const fromBP = parseLength(_fromBP)
-            const toBP = parseLength(_toBP ?? defaultToBP.raw) // Tailwind doesn't use default for modifiers, it just passes it as null
+            const toBP = parseLength(_toBP ?? context[`defaultTo${type === 'screen' ? 'Screen' : 'Container'}`].raw) // Tailwind doesn't use default for modifiers, it just passes it as null
             if (!fromBP || !toBP) {
                 log.warn('non-lengths', [
                     'Fluid utilities can only work with length values'
                 ])
                 return null
             }
+
             const prefix = util ? util+'-' : ''
+            // We may not need to output a scrubber, so figure that out:
+            const scrubber = {
+                'screen': preferContainer ? SCREEN_SCRUBBER : null,
+                'screen-h': '100vh',
+                'container': preferContainer ? null : CONTAINER_SCRUBBER,
+                'container-h': '100cqh'
+            }[name] ?? null
             return {
-                [`--fluid-${prefix}scrubber`]: {
-                    'screen': preferContainer ? DEFAULT_SCREEN_SCRUBBER : null,
-                    'screen-h': '100vh',
-                    'container': preferContainer ? null : DEFAULT_CONTAINER_SCRUBBER,
-                    'container-h': '100cqh'
-                }[name] ?? null,                
+                [`--fluid-${prefix}scrubber`]: scrubber,                
                 // You always have to set these next two, because it could be in a media query i.e.
                 // ~p-4/8 ~p-screen/md md:~p-8/12 md:~p-screen-md
                 //         ^ (1)                      ^ if this doesn't overwrite the toBP, it'll still be md from (1)
                 [`--fluid-${prefix}from-bp`]: fromBP.number+'',
                 [`--fluid-${prefix}to-bp`]: toBP.number+'',
+
+                // Reset variables so they don't cascade. See default values in clamp() above
+                // TODO: maybe incorporate @property when that's better supported?
+                '/* Don\'t cascade variables: */\n:where(& > *)' :{
+                    // Only reset scrubber if we set it:
+                    [`--fluid-${prefix}scrubber`]: !scrubber ? null : util
+                        ? `var(--fluid-scrubber,${defaultScrubber})`
+                        : defaultScrubber,
+                    // We always set these, so always reset them:
+                    [`--fluid-${prefix}from-bp`]: util
+                        ? `var(--fluid-from-bp,${defaultFromBP.number})`
+                        : defaultFromBP.number+'',
+                    [`--fluid-${prefix}to-bp`]: util
+                        ? `var(--fluid-to-bp,${defaultToBP.number})`
+                        : defaultToBP.number+'',
+                }
             }
         }
         api.matchUtilities(utilities
             ? Object.fromEntries(utilities.map((util) => [`~${util}-${name}`, utility(util)]))
             : { [`~${name}`]: utility() }
         , {
-            values: { ...bps, DEFAULT: defaultFromBP.raw },
+            values: { ...bps, DEFAULT: context[`defaultFrom${type === 'screen' ? 'Screen' : 'Container'}`].raw },
             modifiers: { ...bps }
         })
     }
@@ -227,10 +237,14 @@ function getContext(theme: PluginAPI['theme']) {
 
     const { bps: screens, defaultFromBP: defaultFromScreen, defaultToBP: defaultToScreen } = getBreakpoints('screen')
     const { bps: containers, defaultFromBP: defaultFromContainer, defaultToBP: defaultToContainer } = getBreakpoints('container')
+    const preferContainer = fluid.preferContainer === true
     return {
         screens, defaultFromScreen, defaultToScreen,
         containers, defaultFromContainer, defaultToContainer,
-        preferContainer: fluid.preferContainer === true
+        preferContainer,
+        defaultScrubber: preferContainer ? CONTAINER_SCRUBBER : SCREEN_SCRUBBER,
+        defaultFromBP: preferContainer ? defaultFromContainer : defaultFromScreen,
+        defaultToBP: preferContainer ? defaultToContainer : defaultToScreen
     }
 }
 type Context = ReturnType<typeof getContext>

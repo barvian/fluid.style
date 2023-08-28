@@ -91,7 +91,7 @@
 		</div>
 		<button use:resize={{ direction: 'left', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth, resizing }}  tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5" class:bg-neutral-250={$resizing}><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
 	</header>
-	<main class="@container mt-[max(8vh,theme(spacing.12))] mb-[max(6vh,theme(spacing.8))]">
+	<main class="@container ~screen-h/lg ~mt-4/12 mb-[max(6vh,theme(spacing.8))]">
 		<form class="grid grid-cols-2 relative max-w-4xl mx-auto before:absolute before:-inset-x-[10%] before:-top-[100%] before:-bottom-[80%] before:bg-gradients before:-z-[2] before:blur-[100px] before:pointer-events-none after:bg-white after:absolute after:inset-0 after:-z-[1] after:~rounded-[1rem]/[1.75rem] after:shadow-2xl">
 			<fieldset class="md:flex items-center gap-[3%] ~p-4/8">
 				<Number class="max-md:mb-2" label="Min size" id="min-size" bind:value={$min} bind:unit={$unit} />
@@ -103,7 +103,7 @@
 				<span class="inline md:inline-block md:mt-5 md:text-neutral-450 md:text-2xl">@</span>
 				<Number class="max-md:contents" label="Breakpoint" id="max-breakpoint" bind:value={$maxBP} bind:unit={$unit} unitTabbable />
 			</fieldset>
-			<output class="col-span-2 ~rounded-b-[1rem]/[1.75rem] overflow-hidden overlap ~text-base/lg" for="min-size min-breakpoint max-size max-breakpoint">
+			<output class="col-span-2 ~rounded-b-[1rem]/[1.75rem] overflow-hidden overlap ~text-base/lg ~text-screen-xs" for="min-size min-breakpoint max-size max-breakpoint">
 				<code class="block bg-[#393939] overflow-x-auto whitespace-nowrap text-white font-bold text-center ~p-5/8">
 					<span class="text-neutral-400">{type ? 'font-size' : '[property]'}:</span>
 					<button type="button" title="Copy CSS code" class="cursor-copy border-neutral-200 group transition-colors hover:bg-white/10 active:bg-white/0 active:transition-none rounded-md border px-[0.889em] py-[0.55em] border-dashed" on:click={copyCode}>
