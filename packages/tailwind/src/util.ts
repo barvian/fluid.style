@@ -1,3 +1,5 @@
+export * from 'filter-obj'
+export { default as mapObject } from 'map-obj'
 import { length as isLength } from 'tailwindcss/src/util/dataTypes'
 export { isLength }
 export { default as log } from 'tailwindcss/lib/util/log'

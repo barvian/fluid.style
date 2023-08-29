@@ -2,9 +2,7 @@ import plugin from 'tailwindcss/plugin'
 type Plugin = ReturnType<typeof plugin>
 import { corePlugins } from 'tailwindcss/lib/corePlugins'
 import { PluginAPI, PluginCreator } from 'tailwindcss/types/config'
-import mapObject from 'map-obj'
-import { includeKeys, excludeKeys } from 'filter-obj'
-import { log, CSSLength, type RawValue } from './util'
+import { log, includeKeys, mapObject, CSSLength, type RawValue } from './util'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
 const SCREEN_SCRUBBER = '100vw'
