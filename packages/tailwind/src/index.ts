@@ -147,8 +147,8 @@ function interceptUtilities(api: PluginAPI, {
     const matchUtilities: PluginAPI['matchUtilities'] = (utilities, options) => {
         // Add original
         if (addOriginal) api.matchUtilities(utilities, options)
-        // Skip ones with types that don't include length
-        if (options?.type && !options.type.includes('length')/* && !options.type.includes('any')*/) return
+        // Skip ones with types that don't include length or any
+        if (options?.type && !options.type.includes('length') && !options.type.includes('any')) return
         
         // Add fluid version
         // Start by filtering the values as much as possible
