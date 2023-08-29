@@ -152,6 +152,7 @@ function interceptUtilities(api: PluginAPI, {
             } satisfies typeof origFn]
         ), {
             ...options,
+            supportsNegativeValues: false, // b/c TW only negates the value, not the modifier
             modifiers: options?.values ?? {} // must be at least {} or else Tailwind won't allow any modifiers
         })
     }
