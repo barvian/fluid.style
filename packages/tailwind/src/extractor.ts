@@ -3,16 +3,15 @@ import * as regex from 'tailwindcss/src/lib/regex'
 
 type BuildExtractOptions = {
     separator?: string
-    prefix?: string
 }
 
 // This is the default extractor:
 // https://github.com/tailwindlabs/tailwindcss/blob/8f1987567b6f8b4dba463d9db624398e6f6a70ab/src/lib/defaultExtractor.js
 // with two extra chars to support the ~ prefix
-export default (options: BuildExtractOptions = {}) => {
+export default (options: BuildExtractOptions = {}): ExtractorFn => {
     let patterns = Array.from(buildRegExps(options))
 
-    const DEFAULT: ExtractorFn = (content: string) => {
+    return (content: string) => {
       let results: string[] = []
   
       for (let pattern of patterns) {
@@ -21,12 +20,9 @@ export default (options: BuildExtractOptions = {}) => {
   
       return results.filter((v) => v !== undefined).map(clipAtBalancedParens)
     }
-    return { DEFAULT }
 }
 
-function* buildRegExps({ separator = ':', prefix = '' }: BuildExtractOptions) {
-    if (prefix) prefix = regex.optional(regex.pattern([/-?/, regex.escape(prefix)]))
-  
+function* buildRegExps({ separator = ':' }: BuildExtractOptions) {
     let utility = regex.any([
       // Arbitrary properties (without square brackets)
       /\[[^\s:'"`]+:[^\s\[\]]+\]/,
@@ -40,7 +36,7 @@ function* buildRegExps({ separator = ':', prefix = '' }: BuildExtractOptions) {
       // Utilities
       regex.pattern([
         // Utility Name / Group Name
-        /-?~?(?:\w+)/,
+        /-?~?\|?(?:\w+)/,
         // ^ the only new thing, essentially
   
         // Normal/Arbitrary values
@@ -102,7 +98,7 @@ function* buildRegExps({ separator = ':', prefix = '' }: BuildExtractOptions) {
         // Important (optional)
         /!?/,
   
-        prefix,
+        /* prefix: */'', // set to default prefix
   
         utility,
       ])
