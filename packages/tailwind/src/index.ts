@@ -2,7 +2,9 @@ import plugin from 'tailwindcss/plugin'
 type Plugin = ReturnType<typeof plugin>
 import { corePlugins } from 'tailwindcss/lib/corePlugins'
 import { PluginAPI, PluginCreator } from 'tailwindcss/types/config'
-import { log, mapObject, filterObject, CSSLength, type RawValue } from './util'
+import mapObject from 'map-obj'
+import { includeKeys, excludeKeys } from 'filter-obj'
+import { log, CSSLength, type RawValue } from './util'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
 const SCREEN_SCRUBBER = '100vw'
@@ -28,8 +30,10 @@ export default plugin((api: PluginAPI) => {
     // Add fluid versions for enabled core plugins
     const interceptedAPI = interceptUtilities(api, {
         addOriginal: false,
-        transformValue(val, util) {
-            if (util === 'text' && Array.isArray(val)) return val[0]
+        transform: {
+            text(val) {
+                if (Array.isArray(val)) return val[0]
+            }
         }
     }, context)
     Object.entries(corePlugins).forEach(([name, _p]) => {
@@ -114,14 +118,14 @@ export default plugin((api: PluginAPI) => {
  * Return a modified PluginAPI that intercepts calls to matchUtilities and matchComponents
  * to add fluidized versions of each
  */
-export type ConvertValueFn = (val: any, util: string) => RawValue
+export type ConvertValueFn = (val: any) => RawValue
 type InterceptOptions = Partial<{
     addOriginal: boolean
-    transformValue: ConvertValueFn
+    transform: Record<string, ConvertValueFn>
 }>
 function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
-    transformValue
+    transform
 }: InterceptOptions = {}, context: Context): PluginAPI {
     // Make any add* or match* function (i.e. addComponents) a noop if we're not including the original
     const rest = addOriginal ? api : mapObject(api, (a, fn) =>
@@ -135,16 +139,35 @@ function interceptUtilities(api: PluginAPI, {
         if (options?.type && !options.type.includes('length')/* && !options.type.includes('any')*/) return
         
         // Add fluid version
-        const { DEFAULT, ...modifiers } = options?.values ?? {} // TW doesn't use the DEFAULT convention for modifiers so we'll extract it
+        // Start by filtering the values as much as possible
+        const values = Object.entries(options?.values ?? {}).reduce((values, [k, v]) => {
+            // Get a list of matching transforms
+            const transforms = Object.keys(utilities)
+                .map(util => transform?.[util] ?? transform?.DEFAULT)
+                .filter(t => t)
+            
+            const valid = transforms.length
+                // If we have transforms, make sure its a valid value after every one
+                ? transforms.every(t => parseValue(t!(v) ?? v, context))
+                // otherwise just make sure it's valid
+                : Boolean(parseValue(v, context))
+            
+            // If it passes, add it to our filtered set of values
+            if (valid) values[k] = v
+            return values
+        }, {} as Record<string, any>)
+
+        // TW doesn't use the DEFAULT convention for modifiers so we'll extract it:
+        const { DEFAULT, ...modifiers } = values
+        
         api.matchUtilities<any, any>(mapObject(utilities, (util, origFn) =>
             [`~${util}`, function(_from, { modifier: _to }) {
                 // See note above
-                // @ts-expect-error mismatched generics
                 if (_to === null && DEFAULT) _to = DEFAULT
 
                 const parsed = parseValues(
-                    typeof _from === 'string' ? _from : transformValue?.(_from, util),
-                    typeof _to === 'string' ? _to : transformValue?.(_to, util),
+                    transform?.[util]?.(_from) ?? transform?.DEFAULT?.(_from) ?? _from,
+                    transform?.[util]?.(_to) ?? transform?.DEFAULT?.(_to) ?? _to,
                     context
                 )
                 if (!parsed) return null
@@ -157,18 +180,37 @@ function interceptUtilities(api: PluginAPI, {
             } satisfies typeof origFn]
         ), {
             ...options,
+            values,
             supportsNegativeValues: false, // b/c TW only negates the value, not the modifier
             modifiers
         })
     }
     
-    // @ts-expect-error the stint above is too dynamic for TS
+    // @ts-expect-error the `rest` thing is too dynamic for TS
     return { ...rest, matchUtilities, matchComponents: matchUtilities }
 }
 
+function parseValue(_val: any, { unit }: Context) {
+    if (!_val) return null
+    const val = CSSLength.parse(_val)
+    if (!val) {
+        log.warn('non-lengths', [
+            'Fluid utilities can only work with length values'
+        ])
+        return null
+    }
+    if (val.unit !== unit) {
+        log.warn('mismatching-units', [
+            `Fluid utilities' value units must match breakpoint units`
+        ])
+        return null
+    }
+    return val
+}
+
 function parseValues(
-    _from: RawValue, _to: RawValue,
-    { defaultFromBP, defaultToBP }: Context
+    _from: any, _to: any,
+    context: Context
 ) {
     if (!_from || !_to) {
         log.warn('missing-values', [
@@ -176,20 +218,10 @@ function parseValues(
         ])
         return null
     }
-    const from = CSSLength.parse(_from)
-    const to = CSSLength.parse(_to)
-    if (!from || !to) {
-        log.warn('non-lengths', [
-            'Fluid utilities can only work with length values'
-        ])
-        return null
-    }
-    if (new Set([defaultFromBP.unit, defaultToBP.unit, from.unit, to.unit]).size > 1) {
-        log.warn('mismatching-units', [
-            `Fluid utilities' value units must match breakpoint units`
-        ])
-        return null
-    }
+    const from = parseValue(_from, context)
+    const to = parseValue(_to, context)
+    if (!from || !to) return null
+
     if (from.number === to.number) {
         log.warn('no-change', [
             'Fluid utilities require two distinct values'
@@ -223,7 +255,7 @@ function getContext(theme: PluginAPI['theme']) {
         const bpsKey = bpsType === 'container' ? 'containers' : 'screens'
         const rawBps = theme(bpsKey) ?? {}
         // Get all "simple" breakpoints (i.e. just a length, not an object)
-        const bps = filterObject(rawBps, (_, v) => typeof v === 'string' && CSSLength.test(v)) as Record<string, string> // TS can't infer based on the filter
+        const bps = includeKeys(rawBps, (_, v) => typeof v === 'string' && CSSLength.test(v)) as Record<string, string> // TS can't infer based on the filter
         
         let sortedBreakpoints: CSSLength[]
         function getDefaultBreakpoint(bpType: 'from' | 'to') {
@@ -263,13 +295,18 @@ function getContext(theme: PluginAPI['theme']) {
     const [screens, defaultFromScreen, defaultToScreen] = getBreakpoints('screen')
     const [containers, defaultFromContainer, defaultToContainer] = getBreakpoints('container')
     const preferContainer = fluid.preferContainer === true
+    const units = [...new Set([defaultFromScreen.unit, defaultToScreen.unit])]
+    if (units.length !== 1 || units[0] == null) {
+        throw new Error(`All default fluid breakpoints must have the same units`)
+    }
     return {
         screens, defaultFromScreen, defaultToScreen,
         containers, defaultFromContainer, defaultToContainer,
         preferContainer,
         defaultScrubber: preferContainer ? CONTAINER_SCRUBBER : SCREEN_SCRUBBER,
         defaultFromBP: preferContainer ? defaultFromContainer : defaultFromScreen,
-        defaultToBP: preferContainer ? defaultToContainer : defaultToScreen
+        defaultToBP: preferContainer ? defaultToContainer : defaultToScreen,
+        unit: units[0] as string
     }
 }
 type Context = ReturnType<typeof getContext>
