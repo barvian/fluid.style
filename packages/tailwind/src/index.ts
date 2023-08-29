@@ -206,8 +206,15 @@ function interceptUtilities(api: PluginAPI, {
     return { ...rest, matchUtilities, matchComponents: matchUtilities }
 }
 
-function parseValue(_val: any, { unit }: Context, { warn = false } = {}) {
+function parseValue(_val: any, { unit, theme }: Context, { warn = false } = {}) {
     if (!_val) return null
+    if (typeof _val === 'string') {
+        // Test if it's a theme function
+        const [, sign, lookup] = _val.match(/^([+-]?)theme\((.*?)\)$/) ?? []
+        if (lookup) {
+            _val = sign+theme(lookup)
+        }
+    }
     const val = CSSLength.parse(_val)
     if (!val) {
         if (warn) log.warn('non-lengths', [
@@ -317,6 +324,7 @@ function getContext(theme: PluginAPI['theme']) {
         throw new Error(`All default fluid breakpoints must have the same units`)
     }
     return {
+        theme,
         screens, defaultFromScreen, defaultToScreen,
         containers, defaultFromContainer, defaultToContainer,
         preferContainer,
