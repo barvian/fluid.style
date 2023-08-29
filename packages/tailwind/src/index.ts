@@ -135,8 +135,13 @@ function interceptUtilities(api: PluginAPI, {
         if (options?.type && !options.type.includes('length')/* && !options.type.includes('any')*/) return
         
         // Add fluid version
+        const { DEFAULT, ...modifiers } = options?.values ?? {} // TW doesn't use the DEFAULT convention for modifiers so we'll extract it
         api.matchUtilities<any, any>(mapObject(utilities, (util, origFn) =>
             [`~${util}`, function(_from, { modifier: _to }) {
+                // See note above
+                // @ts-expect-error mismatched generics
+                if (_to === null && DEFAULT) _to = DEFAULT
+
                 const parsed = parseValues(
                     typeof _from === 'string' ? _from : transformValue?.(_from, util),
                     typeof _to === 'string' ? _to : transformValue?.(_to, util),
@@ -153,7 +158,7 @@ function interceptUtilities(api: PluginAPI, {
         ), {
             ...options,
             supportsNegativeValues: false, // b/c TW only negates the value, not the modifier
-            modifiers: options?.values ?? {} // must be at least {} or else Tailwind won't allow any modifiers
+            modifiers
         })
     }
     
