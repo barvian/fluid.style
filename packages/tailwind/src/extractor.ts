@@ -9,10 +9,10 @@ type BuildExtractOptions = {
 // This is the default extractor:
 // https://github.com/tailwindlabs/tailwindcss/blob/8f1987567b6f8b4dba463d9db624398e6f6a70ab/src/lib/defaultExtractor.js
 // with two extra chars to support the ~ prefix
-export default (options: BuildExtractOptions = {}): ExtractorFn => {
+export default (options: BuildExtractOptions = {}) => {
     let patterns = Array.from(buildRegExps(options))
 
-    return (content: string) => {
+    const DEFAULT: ExtractorFn = (content: string) => {
       let results: string[] = []
   
       for (let pattern of patterns) {
@@ -21,6 +21,7 @@ export default (options: BuildExtractOptions = {}): ExtractorFn => {
   
       return results.filter((v) => v !== undefined).map(clipAtBalancedParens)
     }
+    return { DEFAULT }
 }
 
 function* buildRegExps({ separator = ':', prefix = '' }: BuildExtractOptions) {
