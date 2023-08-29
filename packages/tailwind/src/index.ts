@@ -123,7 +123,10 @@ function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
     transformValue
 }: InterceptOptions = {}, context: Context): PluginAPI {
-    const { defaultFromBP, defaultToBP, defaultScrubber } = context
+    // Make any add* or match* function (i.e. addComponents) a noop if we're not including the original
+    const rest = addOriginal ? api : mapObject(api, (a, fn) =>
+        a.startsWith('add') || a.startsWith('match') ? [a, ()=>{}] : [a, fn]
+    )
 
     const matchUtilities: PluginAPI['matchUtilities'] = (utilities, options) => {
         // Add original
@@ -141,31 +144,18 @@ function interceptUtilities(api: PluginAPI, {
                 )
                 if (!parsed) return null
                 const [from, to] = parsed
-                const unit = from.unit // you can technically get it from any of the values
-
-                const fromBPNumber = `var(--fluid-from-bp,${defaultFromBP.number})`
-                const fromBPLength = `${fromBPNumber}*1${unit}`
-                const toBPNumber = `var(--fluid-to-bp,${defaultToBP.number})`
-                const scrubber = `var(--fluid-scrubber,${defaultScrubber})`
-                const min = `${Math.min(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
-                const max = `${Math.max(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
-                const delta = to.number - from.number
+                
                 return origFn(
-                    `clamp(${min},${from.number}${unit} + (${scrubber} - ${fromBPLength})/(${toBPNumber} - ${fromBPNumber})${delta === 1 ? '' : `*${delta}`/* save a multiplication by 1 */},${max})`,
+                    generateClamp(from, to, context),
                     { modifier: null } // don't pass along the modifier
                 )
             } satisfies typeof origFn]
         ), {
             ...options,
-            supportsNegativeValues: false, // b/c they don't affect the modifier values which is confusing
             modifiers: options?.values ?? {} // must be at least {} or else Tailwind won't allow any modifiers
         })
     }
-
-    // Make any add* or match* function (i.e. addComponents) a noop if we're not including the original
-    const rest = addOriginal ? api : mapObject(api, (a, fn) =>
-        a.startsWith('add') || a.startsWith('match') ? [a, ()=>{}] : [a, fn]
-    )
+    
     // @ts-expect-error the stint above is too dynamic for TS
     return { ...rest, matchUtilities, matchComponents: matchUtilities }
 }
@@ -201,6 +191,23 @@ function parseValues(
         return null
     }
     return [from, to] as const
+}
+
+function generateClamp(
+    from: CSSLength, to: CSSLength, 
+    { defaultFromBP, defaultToBP, defaultScrubber }: Context,
+) {
+    const unit = from.unit // you can technically get it from any of the values
+
+    const fromBPNumber = `var(--fluid-from-bp,${defaultFromBP.number})`
+    const fromBPLength = `${fromBPNumber}*1${unit}`
+    const toBPNumber = `var(--fluid-to-bp,${defaultToBP.number})`
+    const scrubber = `var(--fluid-scrubber,${defaultScrubber})`
+    const min = `${Math.min(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
+    const max = `${Math.max(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
+    const delta = to.number - from.number
+
+    return `clamp(${min},${from.number}${unit} + (${scrubber} - ${fromBPLength})/(${toBPNumber} - ${fromBPNumber})${delta === 1 ? '' : `*${delta}`/* save a multiplication by 1 */},${max})`
 }
 
 function getContext(theme: PluginAPI['theme']) {
