@@ -16,7 +16,7 @@ export type ThemeConfigFluid = Partial<{
     preferContainer: boolean
 }>
 
-export default plugin((api: PluginAPI) => {
+export const fluidCorePlugins = plugin((api: PluginAPI) => {
     const { theme, corePlugins: corePluginEnabled, addBase, matchUtilities } = api
     const context = getContext(theme)
     const {
@@ -124,15 +124,17 @@ export default plugin((api: PluginAPI) => {
     })
 })
 
-/**
- * Return a modified PluginAPI that intercepts calls to matchUtilities and matchComponents
- * to add fluidized versions of each
- */
+
 export type TransformValueFn = (val: any) => RawValue
 type InterceptOptions = Partial<{
     addOriginal: boolean
     transform: Record<string, TransformValueFn>
 }>
+
+/**
+ * Return a modified PluginAPI that intercepts calls to matchUtilities and matchComponents
+ * to add fluidized versions of each
+ */
 function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
     transform
