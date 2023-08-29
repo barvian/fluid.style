@@ -141,13 +141,14 @@ function interceptUtilities(api: PluginAPI, {
         // Add fluid version
         // Start by filtering the values as much as possible
         const values = Object.entries(options?.values ?? {}).reduce((values, [k, v]) => {
-            // Get a list of matching transforms
+            // Get a list of unique matching transforms
             const transforms = Object.keys(utilities)
-                .map(util => transform?.[util] ?? transform?.DEFAULT)
+                .map(util => transform?.[util])
                 .filter(t => t)
+            if (transform?.DEFAULT) transforms.push(transform.DEFAULT)
             
-            // I could probably save this transform under certain conditions but
-            // that's an optimization for another day
+            // These pre-transformed values could probably get saved under certain
+            // conditions, but that's an optimization for another day
             const valid = transforms.length
                 // If we have transforms, make sure its a valid value after every one
                 ? transforms.every(t => parseValue(t!(v) ?? v, context))
@@ -164,7 +165,7 @@ function interceptUtilities(api: PluginAPI, {
         
         api.matchUtilities<any, any>(mapObject(utilities, (util, origFn) =>
             [`~${util}`, function(_from, { modifier: _to }) {
-                // See note above
+                // See note about default modifiers above
                 if (_to === null && DEFAULT) _to = DEFAULT
 
                 const parsed = parseValues(
