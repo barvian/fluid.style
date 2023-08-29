@@ -118,10 +118,10 @@ export default plugin((api: PluginAPI) => {
  * Return a modified PluginAPI that intercepts calls to matchUtilities and matchComponents
  * to add fluidized versions of each
  */
-export type ConvertValueFn = (val: any) => RawValue
+export type TransformValueFn = (val: any) => RawValue
 type InterceptOptions = Partial<{
     addOriginal: boolean
-    transform: Record<string, ConvertValueFn>
+    transform: Record<string, TransformValueFn>
 }>
 function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
@@ -146,6 +146,8 @@ function interceptUtilities(api: PluginAPI, {
                 .map(util => transform?.[util] ?? transform?.DEFAULT)
                 .filter(t => t)
             
+            // I could probably save this transform under certain conditions but
+            // that's an optimization for another day
             const valid = transforms.length
                 // If we have transforms, make sure its a valid value after every one
                 ? transforms.every(t => parseValue(t!(v) ?? v, context))
