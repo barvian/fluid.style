@@ -2,7 +2,7 @@ import plugin from 'tailwindcss/plugin'
 type Plugin = ReturnType<typeof plugin>
 import { corePlugins } from 'tailwindcss/lib/corePlugins'
 import { PluginAPI, PluginCreator } from 'tailwindcss/types/config'
-import { isLength, log, parseLength, mapObject, filterObject, type CSSLength, type RawValue } from './util'
+import { log, mapObject, filterObject, CSSLength, type RawValue } from './util'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
 const SCREEN_SCRUBBER = '100vw'
@@ -43,7 +43,7 @@ export default plugin((api: PluginAPI) => {
         '~'(_fromBP, { modifier: _toBP }) {
             const parsed = parseValues(
                 _fromBP,
-                _toBP ?? defaultToScreen.raw, // Tailwind doesn't use default for modifiers, it just passes it as null
+                _toBP ?? defaultToScreen.cssText, // Tailwind doesn't use default for modifiers, it just passes it as null
                 context
             )
             if (!parsed) return null
@@ -60,7 +60,7 @@ export default plugin((api: PluginAPI) => {
             }
         }
     }, {
-        values: { ...screens, DEFAULT: defaultFromScreen.raw },
+        values: { ...screens, DEFAULT: defaultFromScreen.cssText },
         modifiers: screens
     })
 
@@ -69,7 +69,7 @@ export default plugin((api: PluginAPI) => {
         '~@'(_fromBP, { modifier: _toBP }) {
             const parsed = parseValues(
                 _fromBP,
-                _toBP ?? defaultToContainer.raw, // Tailwind doesn't use default for modifiers, it just passes it as null
+                _toBP ?? defaultToContainer.cssText, // Tailwind doesn't use default for modifiers, it just passes it as null
                 context
             )
             if (!parsed) return null
@@ -84,8 +84,8 @@ export default plugin((api: PluginAPI) => {
             }
         }
     }, {
-        values: { ...containers, DEFAULT: defaultFromContainer.raw },
-        modifiers: containers
+        values: { ...containers, DEFAULT: defaultFromContainer.cssText },
+        modifiers: containers,
     })
     
     // Prevent cascading variables
@@ -170,8 +170,8 @@ function parseValues(
         ])
         return null
     }
-    const from = parseLength(_from)
-    const to = parseLength(_to)
+    const from = CSSLength.parse(_from)
+    const to = CSSLength.parse(_to)
     if (!from || !to) {
         log.warn('non-lengths', [
             'Fluid utilities can only work with length values'
@@ -217,7 +217,7 @@ function getContext(theme: PluginAPI['theme']) {
         const bpsKey = bpsType === 'container' ? 'containers' : 'screens'
         const rawBps = theme(bpsKey) ?? {}
         // Get all "simple" breakpoints (i.e. just a length, not an object)
-        const bps = filterObject(rawBps, (_, v) => typeof v === 'string' && isLength(v)) as Record<string, string> // TS can't infer based on the filter
+        const bps = filterObject(rawBps, (_, v) => typeof v === 'string' && CSSLength.test(v)) as Record<string, string> // TS can't infer based on the filter
         
         let sortedBreakpoints: CSSLength[]
         function getDefaultBreakpoint(bpType: 'from' | 'to') {
@@ -228,7 +228,7 @@ function getContext(theme: PluginAPI['theme']) {
             const rawBp = fluid[bpKey]
     
             if (typeof rawBp === 'string') {
-                const parsed = parseLength(rawBps[rawBp] ?? rawBp)
+                const parsed = CSSLength.parse(rawBps[rawBp] ?? rawBp)
                 if (!parsed) throw new Error(`Invalid value for \`theme.fluid.${bpKey}\``)
                 return parsed
             } else if (rawBp != null) {
@@ -240,7 +240,7 @@ function getContext(theme: PluginAPI['theme']) {
                 if (!bpsVals.length) {
                     throw new Error(`Cannot resolve \`theme.fluid.${bpKey}\` because there's no simple values in \`theme.${bpsKey}\``)
                 }
-                const parsedBpsVals = bpsVals.map(v => parseLength(v)!)
+                const parsedBpsVals = bpsVals.map(v => CSSLength.parse(v)!)
                 // Error if they have different units (can't sort that way)
                 if (new Set(parsedBpsVals.map(l => l.unit!)).size > 1) {
                     throw new Error(`Cannot resolve \`theme.fluid.${bpKey}\` because \`theme.${bpsKey}\` contains values of different units`)
@@ -275,9 +275,9 @@ export { default as buildFluidExtract } from './extractor'
  * compatibility with default utilities
  */
 export const defaultScreensInRems = mapObject(defaultTheme.screens ?? {}, (name, v) => {
-    if (typeof v !== 'string' || !isLength(v)) return [name, v]
-    const len = parseLength(v)!
-    if (len.unit !== 'px') return [name, v]
+    if (typeof v !== 'string') return [name, v]
+    const len = CSSLength.parse(v)
+    if (!len || len.unit !== 'px') return [name, v]
     return [name, `${len.number / 16}rem`]
 })
 

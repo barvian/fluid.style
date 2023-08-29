@@ -5,23 +5,22 @@ export { isLength }
 export { default as log } from 'tailwindcss/lib/util/log'
 
 export type RawValue = string | null | undefined
-export type CSSLength = {
-    number: number
-    unit?: string // only undefined if number is 0,
-    raw: string
-}
 
-/**
- * Split a CSS length into a number string and a unit string
- */
-export function parseLength(len: RawValue): CSSLength | null {
-    if (!len) return null
-    if (!isLength(len)) return null
+export class CSSLength {
+    constructor(public number: number, public unit?: string) {}
+    get cssText() {
+        return `${this.number}${this.unit ?? ''}`
+    }
+    static parse(raw: any) {
+        if (!this.test(raw)) return null
 
-    const match = len.match(/^(.*?)([a-z]+)$/)
-    return {
-        number: parseFloat(match?.[1]!),
-        unit: match?.[2]!,
-        raw: len
+        const match = (raw as string).match(/^(.*?)([a-z]+)$/)
+        return new this(
+            parseFloat(match?.[1]!),
+            match?.[2]!
+        )
+    }
+    static test(raw: any) {
+        return typeof raw === 'string' ? isLength(raw) as boolean : false
     }
 }
