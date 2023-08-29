@@ -48,7 +48,8 @@ export default plugin((api: PluginAPI) => {
             const parsed = parseValues(
                 _fromBP,
                 _toBP ?? defaultToScreen.cssText, // Tailwind doesn't use default for modifiers, it just passes it as null
-                context
+                context,
+                { warn: true }
             )
             if (!parsed) return null
             const [fromBP, toBP] = parsed
@@ -67,6 +68,11 @@ export default plugin((api: PluginAPI) => {
         values: { ...screens, DEFAULT: defaultFromScreen.cssText },
         modifiers: screens
     })
+    if (screens.DEFAULT) {
+        log.warn('inaccessible-breakpoint', [
+            `Your DEFAULT screen breakpoint must be renamed to be used in fluid utilities`
+        ])
+    }
 
     // And ~@ utility to configure container breakpoints
     matchUtilities({
@@ -74,7 +80,8 @@ export default plugin((api: PluginAPI) => {
             const parsed = parseValues(
                 _fromBP,
                 _toBP ?? defaultToContainer.cssText, // Tailwind doesn't use default for modifiers, it just passes it as null
-                context
+                context,
+                { warn: true }
             )
             if (!parsed) return null
             const [fromBP, toBP] = parsed
@@ -91,6 +98,11 @@ export default plugin((api: PluginAPI) => {
         values: { ...containers, DEFAULT: defaultFromContainer.cssText },
         modifiers: containers,
     })
+    if (containers.DEFAULT) {
+        log.warn('inaccessible-breakpoint', [
+            `Your DEFAULT container breakpoint must be renamed to be used in fluid utilities`
+        ])
+    }
     
     // Prevent cascading variables
     // TODO: maybe use @property for this when it's better supported?
@@ -171,7 +183,8 @@ function interceptUtilities(api: PluginAPI, {
                 const parsed = parseValues(
                     transform?.[util]?.(_from) ?? transform?.DEFAULT?.(_from) ?? _from,
                     transform?.[util]?.(_to) ?? transform?.DEFAULT?.(_to) ?? _to,
-                    context
+                    context,
+                    { warn: true }
                 )
                 if (!parsed) return null
                 const [from, to] = parsed
@@ -193,17 +206,17 @@ function interceptUtilities(api: PluginAPI, {
     return { ...rest, matchUtilities, matchComponents: matchUtilities }
 }
 
-function parseValue(_val: any, { unit }: Context) {
+function parseValue(_val: any, { unit }: Context, { warn = false } = {}) {
     if (!_val) return null
     const val = CSSLength.parse(_val)
     if (!val) {
-        log.warn('non-lengths', [
+        if (warn) log.warn('non-lengths', [
             'Fluid utilities can only work with length values'
         ])
         return null
     }
     if (val.unit !== unit) {
-        log.warn('mismatching-units', [
+        if (warn) log.warn('mismatching-units', [
             `Fluid utilities' value units must match breakpoint units`
         ])
         return null
@@ -213,10 +226,11 @@ function parseValue(_val: any, { unit }: Context) {
 
 function parseValues(
     _from: any, _to: any,
-    context: Context
+    context: Context,
+    { warn = false } = {}
 ) {
     if (!_from || !_to) {
-        log.warn('missing-values', [
+        if (warn) log.warn('missing-values', [
             'Fluid utilities require two values'
         ])
         return null
@@ -226,7 +240,7 @@ function parseValues(
     if (!from || !to) return null
 
     if (from.number === to.number) {
-        log.warn('no-change', [
+        if (warn) log.warn('no-change', [
             'Fluid utilities require two distinct values'
         ])
         return null
