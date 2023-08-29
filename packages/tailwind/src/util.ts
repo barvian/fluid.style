@@ -15,10 +15,8 @@ export class CSSLength {
         if (!this.test(raw)) return null
 
         const match = (raw as string).match(/^(.*?)([a-z]+)$/)
-        return new this(
-            parseFloat(match?.[1]!),
-            match?.[2]!
-        )
+        const number = parseFloat(match?.[1] ?? '')
+        return isNaN(number) ? null : new this(number, match?.[2])
     }
     static test(raw: any) {
         return typeof raw === 'string' ? isLength(raw) as boolean : false
