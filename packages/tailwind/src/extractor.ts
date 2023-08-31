@@ -1,4 +1,5 @@
 import { type ExtractorFn } from "tailwindcss/types/config"
+// @ts-expect-error untyped source file
 import * as regex from 'tailwindcss/src/lib/regex'
 
 type BuildExtractOptions = {

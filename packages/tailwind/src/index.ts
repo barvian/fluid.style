@@ -1,5 +1,6 @@
 import plugin from 'tailwindcss/plugin'
 type Plugin = ReturnType<typeof plugin>
+// @ts-expect-error untyped source file
 import { corePlugins } from 'tailwindcss/lib/corePlugins'
 import { PluginAPI, PluginCreator } from 'tailwindcss/types/config'
 import { log, includeKeys, mapObject, CSSLength, type RawValue } from './util'

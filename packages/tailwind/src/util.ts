@@ -1,7 +1,9 @@
 export * from 'filter-obj'
 export { default as mapObject } from 'map-obj'
+// @ts-expect-error untyped source file
 import { length as isLength } from 'tailwindcss/src/util/dataTypes'
 export { isLength }
+// @ts-expect-error untyped source file
 export { default as log } from 'tailwindcss/lib/util/log'
 
 export type RawValue = string | null | undefined
