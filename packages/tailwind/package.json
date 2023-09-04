@@ -1,6 +1,6 @@
 {
-  "name": "@fluid.style/tailwind",
-  "version": "0.1.1",
+  "name": "@fluidstyle/tailwindcss-plugin",
+  "version": "0.0.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "jest",
-    "swcify": "swc ./src/index.ts --out-dir ./dist",
+    "swcify": "swc ./src -d ./dist",
     "build": "npm run swcify",
     "dev": "npm run swcify -- --watch",
     "postbuild": "tsc --emitDeclarationOnly",

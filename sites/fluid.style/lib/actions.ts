@@ -4,7 +4,7 @@ import { get, type Writable } from 'svelte/store'
 type ResizeOptions = {
 	direction: 'left' | 'right',
 	value: Writable<number>,
-	double: boolean,
+	double?: boolean,
 	resizing?: Writable<boolean>,
 	onStop?: () => void
 }

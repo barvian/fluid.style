@@ -1,0 +1,315 @@
+---
+layout: ../../layouts/Docs.astro
+---
+import * as Steps from '@components/Steps'
+import * as Tip from '@components/Tip'
+import Resizer from '@components/Resizer.svelte'
+import AnnotatedCode from '@components/AnnotatedCode.svelte'
+
+## Features
+
+* Extremely **terse** in most use cases
+* Uses your existing Tailwind theme
+* Supports **all core plugins** out of the box (i.e. font size, margin, padding, width, etc.)
+* Often generates **less CSS** than non-fluid classes (i.e. `pt-4 sm:pt-6 md:pt-8 lg:pt-10`)
+* Full Intellisense
+* Comes with a `fluidize` method to add fluid versions of **any custom plugin**
+* **Flexible** enough to handle advanced use cases
+
+## Installation
+
+<Steps.Root>
+  <Steps.Item>
+    <>
+      ### Install the package
+
+      Install `@fluidstyle/tailwindcss-plugin` via npm.
+    </>
+    <Fragment slot="code">
+    ```sh
+    npm install -D @fluidstyle/tailwindcss-plugin
+    ```
+    </Fragment>
+  </Steps.Item>
+  <Steps.Item>
+    <>
+      ### Add the [extractor](https://tailwindcss.com/docs/content-configuration#customizing-extraction-logic)
+
+      This lets you use the new `~` prefix in your Tailwind classes.
+    </>
+    <Fragment slot="code">
+      ```ts title="tailwind.config.ts" ins={1, 6} ins=/content\:(\s*\{)/ ins=/files\:\s*/ ins=/\},/
+      import { buildFluidExtract } from '@fluidstyle/tailwindcss-plugin'
+
+      export default {
+        content: {
+          files: [/* ... */],
+          extract: buildFluidExtract()
+        },
+        theme: {
+          // ...
+        }
+      }
+      ```
+    </Fragment>
+  </Steps.Item>
+  <Steps.Item>
+    <>
+      ### Add the fluid core plugins
+
+      This adds fluid versions of every enabled [core plugin](https://tailwindcss.com/docs/configuration#core-plugins).
+    </>
+    <Fragment slot="code">
+      ```ts title="tailwind.config.ts" ins=/, fluidCorePlugins/ ins={12}
+      import { buildFluidExtract, fluidCorePlugins } from '@fluidstyle/tailwindcss-plugin'
+
+      export default {
+        content: {
+          files: [/* ... */],
+          extract: buildFluidExtract()
+        },
+        theme: {
+          // ...
+        },
+        plugins: [
+          fluidCorePlugins
+        ]
+      }
+      ```
+    </Fragment>
+  </Steps.Item>
+  <Steps.Item>
+    <>
+      ### Use `rem` for `screens`
+
+      Use `rem` versions of Tailwind's default screens to ensure greater
+      compability with core plugins. Make sure any custom screens you add also
+      use `rem` units.
+    </>
+    <Fragment slot="code">
+      ```ts title="tailwind.config.ts" ins=/, defaultScreensInRems/ ins={11} mark=/\/\/.*$/
+      import { buildFluidExtract, fluidCorePlugins, defaultScreensInRems } from '@fluidstyle/tailwindcss-plugin'
+
+      export default {
+        content: {
+          files: [/* ... */],
+          extract: buildFluidExtract()
+        },
+        theme: {
+          extend: {
+            screens: {
+              ...defaultScreensInRems,
+              xs: '30rem' // make sure custom screens use rem units
+            }
+          }
+        },
+        plugins: [
+          fluidCorePlugins
+        ]
+      }
+      ```
+    </Fragment>
+  </Steps.Item>
+</Steps.Root>
+
+## Basic usage
+
+<Resizer client:load height="h-32">
+  <button class="bg-sky-500 hover:bg-sky-700 ~@-md/2xl ~px-4/8 ~py-2/4 ~text-sm/xl leading-[1.25] rounded-full font-semibold text-white">Fluid button</button>
+</Resizer>
+```html mark=/(\~.*?)\s+/
+<button class="bg-sky-500 ~px-4/8 ~py-2/4 ~text-sm/xl ...">Whoa!</h1>
+```
+<Tip.Info class="xl:hidden">It helps to view these examples on a wider screen, to see the full effect</Tip.Info>
+
+Here's a quick overview:
+* Anything prefixed with `~` becomes fluid
+* Every fluid class needs a start and end value, separated by a `/`
+* Fluid classes interpolate between their start value and end value when the viewport is between the start point and end point, respectively
+* The start and end points default to the smallest and largest screen, but [they can be configured](#customizing-default-screens)
+
+## Limitations
+
+Due to CSS restrictions, fluid CSS expessions can only be computed if **all involved lengths have the same units**.
+This includes:
+* Start value
+* Start point
+* To value
+* To point
+
+This usually isn't an issue, especially if you extend the `defaultScreensInRems` object
+as mentioned in [installation instructions](#use-rem-for-screens), but it can be helpful
+to keep in mind when designing.
+
+<Tip.Bad>Trying to set `font-size` in `rem` when the breakpoints are in `px`</Tip.Bad>
+```html
+<h1 class="~text-lg/xl">
+```
+```ts title="tailwind.config.ts"
+export default {
+  // ...
+  theme: {
+    screens: {
+      'sm': '320px',
+      '2xl': '1280px' 
+    },
+    fontSize: {
+      'lg': '1.5rem',
+      'xl': '2rem'
+    }
+  }
+}
+```
+
+<Tip.Bad>Trying to interpolate between two different units</Tip.Bad>
+```html
+<h1 class="~text-[1rem]/[24px]">
+```
+
+<Tip.Bad>Using expressions like `calc()`</Tip.Bad>
+```html
+<h1 class="~text-base/[calc(1.5rem_-_2px)]">
+```
+
+<Tip.Bad>Trying to interpolate between colors</Tip.Bad>
+```html
+<h1 class="~text-white/red-500">
+```
+
+### Negative values
+
+You can't use the dash prefix `-` to negate fluid utiltiies like you
+can with i.e. `-mt-3`, because Tailwind would only negate the start value.
+
+<Tip.Bad>Trying to use `-` to negate a fluid utility</Tip.Bad>
+```html
+<div class="-~mt-3/5">
+```
+
+<Tip.Good>Using negated theme values</Tip.Good>
+```html
+<div class="~mt-[-theme(spacing.3)]/[-theme(spacing.5)]">
+```
+
+## Configuration
+
+<AnnotatedCode>
+  <>
+    ### Customizing default screens
+
+    The default start and end screens can be set with a tuple `[start, end]`, where each
+    value is either a key to your `theme.screens` object or a CSS length.
+    Either value can be omitted, in which case the plugin will use the smallest and largest
+    screen, respectively.
+  </>
+  ```ts title="tailwind.config.ts" mark={6}
+  import { ..., type ThemeConfigFluid } from '@fluidstyle/tailwindcss-plugin'
+
+  export default {
+    theme: {
+      fluid: {
+        defaultScreens: ['sm', '30rem']
+      } satisfies ThemeConfigFluid
+    }
+  }
+  ```
+  <>
+    ### Customizing default containers
+
+    The default [containers](#containers) can be set in the same way as screens.
+  </>
+  ```ts title="tailwind.config.ts" mark={6}
+  import { ..., type ThemeConfigFluid } from '@fluidstyle/tailwindcss-plugin'
+
+  export default {
+    theme: {
+      fluid: {
+        defaultContainers: [, '6xl']
+      } satisfies ThemeConfigFluid
+    }
+  }
+  ```
+  <>
+    ### Container by default
+
+    If for some reason you wanted fluid values to be relative to the nearest container
+    rather than the viewport by default, you can set the `containerByDefault` option to `true`.
+  </>
+  ```ts title="tailwind.config.ts" mark={6}
+  import { ..., type ThemeConfigFluid } from '@fluidstyle/tailwindcss-plugin'
+
+  export default {
+    theme: {
+      fluid: {
+        containerByDefault: true
+      } satisfies ThemeConfigFluid
+    }
+  }
+  ```
+</AnnotatedCode>
+
+## Advanced
+
+You can configure the start/end screens on a per-element basis with
+the included `~` utility. For example:
+
+<Resizer client:load height="h-32">
+  <span class="text-slate-900 dark:text-slate-100 font-semibold ~text-base/4xl ~@-xl/2xl text-center block">Quick increase</span>
+</Resizer>
+```html mark="~-md/lg"
+<h1 class="~text-base/4xl ~-md/lg">Quick increase</h1>
+```
+<Tip.Info>Tailwind lets you omit the start or end screen to use the defaults, i.e. `~/lg` or `~-md`</Tip.Info>
+
+### Containers
+
+If you have the [official container query](https://github.com/tailwindlabs/tailwindcss-container-queries) plugin
+installed, you can make an element's fluid values relative to the nearest `@container`
+rather than the viewport by using the `~@` utility. For example:
+
+```html mark="~@"
+<h1 class="~text-base/4xl ~p-4/8 ~@">Relative to container</h1>
+```
+<Tip.Info>Both the start and end containers are omitted here, so Tailwind falls back to the default containers</Tip.Info>
+
+You can configure start/end containers the same way you can configure screens:
+
+```html mark="~@-sm/lg"
+<h1 class="~text-base/4xl ~p-4/8 ~@-sm/lg">Relative to container</h1>
+```
+
+### Fluidize other plugins
+
+When adding custom plugins to your `tailwind.config.js`, you can run them through
+the `fluidize` function to automatically add fluid versions of all their utilities and components:
+
+```ts title="tailwind.config.ts" ins=/, (fluidize)/ ins="fluidize(" ins=")"
+import { ..., fluidize } from '@fluidstyle/tailwindcss-plugin'
+import myFavoritePlugin from '...'
+
+export default {
+  // ...
+  plugins: [
+    fluidize(myFavoritePlugin)
+    // ...
+  ]
+}
+```
+
+### Combining with breakpoints
+
+To really get crazy, you can combine fluid values with
+container or media queries, as such:
+
+<Resizer client:load height="h-32">
+  <span class="text-slate-900 dark:text-slate-100 font-semibold italic ~text-base/4xl ~@-lg/2xl @2xl:~@-2xl/4xl @2xl:~text-4xl/base text-center block">Whoa!</span>
+</Resizer>
+```html mark="~text-base/4xl ~/md" mark="lg:~-lg lg:~text-4xl/base"
+<h1 class="~text-base/4xl ~/md lg:~-lg lg:~text-4xl/base">Whoa!</h1>
+```
+
+Here's how this works:
+1. By default, we interpolate our font-size between `base` and `4xl` until the viewport
+is our `md` screen
+1. When we get to our `lg` screen, we interpolate between the opposite `4xl` and `base`, starting
+when the viewport is our `lg` screen

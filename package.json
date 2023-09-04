@@ -2,6 +2,7 @@
     "private": true,
     "workspaces": [
       "packages/tailwind",
-      "site"
+      "sites/fluid.style",
+      "sites/calculator.fluid.style"
     ]
   }

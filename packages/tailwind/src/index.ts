@@ -10,11 +10,9 @@ const SCREEN_SCRUBBER = '100vw'
 const CONTAINER_SCRUBBER = '100cqw'
 
 export type ThemeConfigFluid = Partial<{
-    defaultFromScreen: string,
-    defaultToScreen: string,
-    defaultFromContainer: string,
-    defaultToContainer: string,
-    preferContainer: boolean
+    defaultScreens: [string] | [undefined, string] | [string, string],
+    defaultContainers: [string] | [undefined, string] | [string, string],
+    containerByDefault: boolean
 }>
 
 export const fluidCorePlugins = plugin((api: PluginAPI) => {
@@ -23,7 +21,7 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
     const {
         screens, defaultFromScreen, defaultToScreen,
         containers, defaultFromContainer, defaultToContainer,
-        preferContainer, defaultFromBP, defaultToBP
+        containerByDefault, defaultFromBP, defaultToBP
     } = context
 
     // Add fluid versions for enabled core plugins
@@ -42,7 +40,7 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
     })
 
     // And ~ utility to configure screen breakpoints
-    matchUtilities({
+    if (screens) matchUtilities({
         '~'(_fromBP, { modifier: _toBP }) {
             const parsed = parseValues(
                 _fromBP,
@@ -54,8 +52,8 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
             const [fromBP, toBP] = parsed
 
             return {
-                // Only need to change the scrubber if they prefer container:
-                [`--fluid-scrubber`]: preferContainer ? SCREEN_SCRUBBER : null,                
+                // Only need to change the scrubber if they use container by default:
+                [`--fluid-scrubber`]: containerByDefault ? SCREEN_SCRUBBER : null,                
                 // You always have to set these next two, because it could be in a media query i.e.
                 // ~p-4/8 ~/md md:~p-8/12 md:~-md
                 //         ^ (1)              ^ if this doesn't overwrite the toBP, it'll still be md from (1)
@@ -67,14 +65,14 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
         values: { ...screens, DEFAULT: defaultFromScreen.cssText },
         modifiers: screens
     })
-    if (screens.DEFAULT) {
+    if (screens?.DEFAULT) {
         log.warn('inaccessible-breakpoint', [
             `Your DEFAULT screen breakpoint must be renamed to be used in fluid utilities`
         ])
     }
 
     // And ~@ utility to configure container breakpoints
-    matchUtilities({
+    if (containers) matchUtilities({
         '~@'(_fromBP, { modifier: _toBP }) {
             const parsed = parseValues(
                 _fromBP,
@@ -87,7 +85,7 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
 
             return {
                 // Only need to change the scrubber if they prefer screens:
-                '--fluid-scrubber': preferContainer ? null : CONTAINER_SCRUBBER,                
+                '--fluid-scrubber': containerByDefault ? null : CONTAINER_SCRUBBER,                
                 // See note above for why you always set these two:
                 '--fluid-from-bp': fromBP.number+'',
                 '--fluid-to-bp': toBP.number+'',
@@ -97,7 +95,7 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
         values: { ...containers, DEFAULT: defaultFromContainer.cssText },
         modifiers: containers,
     })
-    if (containers.DEFAULT) {
+    if (containers?.DEFAULT) {
         log.warn('inaccessible-breakpoint', [
             `Your DEFAULT container breakpoint must be renamed to be used in fluid utilities`
         ])
@@ -106,18 +104,18 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
     // Prevent cascading variables
     // TODO: maybe use @property for this when it's better supported?
     addBase({
-        '[class^="~-"], [class^="~/"], [class*=" ~-"], [class*=" ~/"]': {
+        '[class~="~-"], [class~="~/"]': {
             ':where(& > *)': {
                 // Screen reset
-                '--fluid-scrubber': preferContainer ? CONTAINER_SCRUBBER : null,
+                '--fluid-scrubber': containerByDefault ? CONTAINER_SCRUBBER : null,
                 '--fluid-from-bp': defaultFromBP.number+'',
                 '--fluid-to-bp': defaultToBP.number+''
             }
         },
-        '[class^="~@"], [class*=" ~@"]': {
+        '[class~="~@"]': {
             ':where(& > *)': {
                 // Container reset
-                '--fluid-scrubber': preferContainer ? null : SCREEN_SCRUBBER,
+                '--fluid-scrubber': containerByDefault ? null : SCREEN_SCRUBBER,
                 '--fluid-from-bp': defaultFromBP.number+'',
                 '--fluid-to-bp': defaultToBP.number+''
             }
@@ -278,35 +276,32 @@ function getContext(theme: PluginAPI['theme']) {
 
     function getBreakpoints(bpsType: 'container' | 'screen') {
         const bpsKey = bpsType === 'container' ? 'containers' : 'screens'
-        const rawBps = theme(bpsKey) ?? {}
+        const rawBps = theme(bpsKey)
+        if (bpsType === 'container' && !rawBps) return [] as const
+
         // Get all "simple" breakpoints (i.e. just a length, not an object)
-        const bps = includeKeys(rawBps, (_, v) => typeof v === 'string' && CSSLength.test(v)) as Record<string, string> // TS can't infer based on the filter
+        const bps = includeKeys(rawBps!, (_, v) => typeof v === 'string' && CSSLength.test(v)) as Record<string, string> // TS can't infer based on the filter
+        const defaultsKey = bpsType === 'container' ? 'defaultContainers' : 'defaultScreens'
         
         let sortedBreakpoints: CSSLength[]
-        function getDefaultBreakpoint(bpType: 'from' | 'to') {
-            const bpKey = bpsType === 'container'
-                // These have to be literal strings (not a template string) for TS:
-                ? (bpType === 'from' ? 'defaultFromContainer' : 'defaultToContainer')
-                : (bpType === 'from' ? 'defaultFromScreen' : 'defaultToScreen')
-            const rawBp = fluid[bpKey]
-    
+        function resolveDefaultBreakpoint(bpType: 'from' | 'to', rawBp: string | undefined) {    
             if (typeof rawBp === 'string') {
-                const parsed = CSSLength.parse(rawBps[rawBp] ?? rawBp)
-                if (!parsed) throw new Error(`Invalid value for \`theme.fluid.${bpKey}\``)
+                const parsed = CSSLength.parse(rawBps![rawBp] ?? rawBp)
+                if (!parsed) throw new Error(`Invalid value for \`theme.fluid.${defaultsKey}[${bpType === 'from' ? 0 : 1}]\``)
                 return parsed
             } else if (rawBp != null) {
-                throw new Error(`Invalid value for \`theme.fluid.${bpKey}\``)
+                throw new Error(`Invalid value for \`theme.fluid.${defaultsKey}[${bpType === 'from' ? 0 : 1}]\``)
             }
             
             sortedBreakpoints ??= (() => {
                 const bpsVals = Object.values(bps)
                 if (!bpsVals.length) {
-                    throw new Error(`Cannot resolve \`theme.fluid.${bpKey}\` because there's no simple values in \`theme.${bpsKey}\``)
+                    throw new Error(`Cannot resolve \`theme.fluid.${defaultsKey}[${bpType === 'from' ? 0 : 1}]\` because there's no simple values in \`theme.${bpsKey}\``)
                 }
                 const parsedBpsVals = bpsVals.map(v => CSSLength.parse(v)!)
                 // Error if they have different units (can't sort that way)
                 if (new Set(parsedBpsVals.map(l => l.unit!)).size > 1) {
-                    throw new Error(`Cannot resolve \`theme.fluid.${bpKey}\` because \`theme.${bpsKey}\` contains values of different units`)
+                    throw new Error(`Cannot resolve \`theme.fluid.${defaultsKey}[${bpType === 'from' ? 0 : 1}]\` because \`theme.${bpsKey}\` contains values of different units`)
                 }
 
                 return parsedBpsVals.sort((a, b) => a.number - b.number)
@@ -314,13 +309,14 @@ function getContext(theme: PluginAPI['theme']) {
             return sortedBreakpoints[bpType === 'from' ? 0 : sortedBreakpoints.length-1]
         }
 
-        return [bps, getDefaultBreakpoint('from'), getDefaultBreakpoint('to')] as const
+        const [defaultFrom, defaultTo] = fluid[defaultsKey] ?? []
+        return [bps, resolveDefaultBreakpoint('from', defaultFrom), resolveDefaultBreakpoint('to', defaultTo)] as const
     }
 
     const [screens, defaultFromScreen, defaultToScreen] = getBreakpoints('screen')
     const [containers, defaultFromContainer, defaultToContainer] = getBreakpoints('container')
-    const preferContainer = fluid.preferContainer === true
-    const units = [...new Set([defaultFromScreen.unit, defaultToScreen.unit])]
+    const containerByDefault = fluid.containerByDefault === true
+    const units = [...new Set([defaultFromScreen!.unit, defaultToScreen!.unit])]
     if (units.length !== 1 || units[0] == null) {
         throw new Error(`All default fluid breakpoints must have the same units`)
     }
@@ -328,10 +324,10 @@ function getContext(theme: PluginAPI['theme']) {
         theme,
         screens, defaultFromScreen, defaultToScreen,
         containers, defaultFromContainer, defaultToContainer,
-        preferContainer,
-        defaultScrubber: preferContainer ? CONTAINER_SCRUBBER : SCREEN_SCRUBBER,
-        defaultFromBP: preferContainer ? defaultFromContainer : defaultFromScreen,
-        defaultToBP: preferContainer ? defaultToContainer : defaultToScreen,
+        containerByDefault,
+        defaultScrubber: containerByDefault ? CONTAINER_SCRUBBER : SCREEN_SCRUBBER,
+        defaultFromBP: containerByDefault ? defaultFromContainer : defaultFromScreen,
+        defaultToBP: containerByDefault ? defaultToContainer : defaultToScreen,
         unit: units[0] as string
     }
 }

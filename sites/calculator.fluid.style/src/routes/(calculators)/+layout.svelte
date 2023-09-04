@@ -7,7 +7,7 @@
 	import { scale } from 'svelte/transition'
 	import copy from 'copy-to-clipboard'
 	import { writable, type Writable } from 'svelte/store'
-	import { resize } from '$lib/actions'
+	import { resize } from '../../../../fluid.style/lib/actions'
 	import { browser } from '$app/environment'
 	
 	$: type = $page.url.pathname === '/type'
@@ -15,7 +15,7 @@
 	minBP = paramable(20, 'min-bp'), maxBP = paramable(77.5, 'max-bp')
 	let unit = paramable<Unit>('rem', 'unit')
 
-	let zoom = 1, prefWidth: Writable<number> = writable(), actualWidth: number, resizing = writable(false)
+	let zoom = 1, prefWidth = writable<number>(), actualWidth: number, resizing = writable(false)
 	$: if (actualWidth) $prefWidth = actualWidth
 	const mac = browser && /(Mac OS)|(Macintosh)/i.test(navigator.userAgent)
 	function handleKeydown(e: KeyboardEvent) {
@@ -40,7 +40,7 @@
 		copy(cssText)
 		copied = true
 		if (copyTimeout) clearTimeout(copyTimeout)
-		copyTimeout = setTimeout(() => copied = false, 3000)
+		copyTimeout = window.setTimeout(() => copied = false, 3000)
 	}
 </script>
 
@@ -89,9 +89,9 @@
 				</div>
 			{/if}
 		</div>
-		<button use:resize={{ direction: 'left', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth, resizing }}  tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5" class:bg-neutral-250={$resizing}><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
+		<button draggable="false" use:resize={{ direction: 'left', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth, resizing }}  tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5" class:bg-neutral-250={$resizing}><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
 	</header>
-	<main class="@container ~mt-4/12 mb-[max(6vh,theme(spacing.8))]">
+	<main class="mt-[max(8vh,theme(spacing.12))] mb-[max(6vh,theme(spacing.8))]">
 		<form class="grid grid-cols-2 relative max-w-4xl mx-auto before:absolute before:-inset-x-[10%] before:-top-[100%] before:-bottom-[80%] before:bg-gradients before:-z-[2] before:blur-[100px] before:pointer-events-none after:bg-white after:absolute after:inset-0 after:-z-[1] after:~rounded-[1rem]/[1.75rem] after:shadow-2xl">
 			<fieldset class="md:flex items-center gap-[3%] ~p-4/8">
 				<Number class="max-md:mb-2" label="Min size" id="min-size" bind:value={$min} bind:unit={$unit} />

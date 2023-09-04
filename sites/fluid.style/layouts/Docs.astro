@@ -1,0 +1,35 @@
+--- 
+import type { MarkdownHeading } from 'astro'
+import TOC from '@components/TOC.svelte';
+import { searchForWorkspaceRoot } from 'vite'
+import { relative } from 'node:path'
+
+interface Props {
+	title: string
+	file: string
+	headings: MarkdownHeading[]
+}
+
+const { headings, file } = Astro.props
+const root = searchForWorkspaceRoot(file)
+const path = relative(root, file)
+---
+
+<div class="container grid grid-cols-1 lg:grid-cols-[15rem_minmax(0,1fr)] gap-6">
+	<div class="relative max-lg:hidden">
+		<div class="sticky top-10">
+			<TOC {headings} client:load />
+		</div>
+	</div>
+	<main>
+		<article class="prose prose-slate dark:prose-invert mx-auto w-full lg:max-w-none [&_[data-anchor]]:block [&_[data-anchor]]:translate-y-[calc(0.25rem_-_40vh)]">
+			<slot />
+		</article>
+	</main>
+	<footer class="col-start-2 pt-10 pb-28 border-t border-slate-200 sm:flex justify-between text-slate-500 dark:border-slate-200/5">
+		<div class="mb-6 sm:mb-0 sm:flex">
+			<p>Copyright ©2023. Not affiliated with Tailwind Labs Inc.</p>
+		</div>
+		<a class="hover:text-slate-900 dark:hover:text-slate-400" href={`https://github.com/barvian/fluid.style/edit/main/${path}`}>Edit this page on GitHub</a>
+	</footer>
+</div>
