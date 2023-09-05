@@ -8,8 +8,9 @@
 
     let cls = ''
     export { cls as class }
+    export let minWidth = '23.75rem'
     
-    let margin = tweened(800 /* biggest value */, { duration: 800, easing: cubicOut }), resizing = writable(false)
+    let margin = tweened(30 /* biggest value in rems */, { duration: 800, easing: cubicOut }), resizing = writable(false)
     let showCursor = false, animating = false, didAnimate = false
     onMount(() => {
       setTimeout(() => showCursor = true, 500)
@@ -23,7 +24,7 @@
 </script>
 
 <div class="{cls} @container h-full pointer-events-none">
-    <div class="shadow-xl relative @container rounded-xl h-full pointer-events-auto" style:margin-right="clamp(0px, {$margin}px, 100cqw - 320px)">
+    <div class="shadow-xl relative @container rounded-xl h-full pointer-events-auto" style:margin-right="clamp(0px, {$margin}{didAnimate ? 'px' : 'rem'}, 100cqw - {minWidth})">
         <div class="rounded-xl ring-1 ring-slate-900/5 h-full flex flex-col items-stretch">
             <!-- Toolbar -->
             <div class="rounded-t-xl bg-gradient-to-b from-white to-[#FBFBFB] dark:bg-none dark:bg-slate-700 dark:highlight-white/10">
