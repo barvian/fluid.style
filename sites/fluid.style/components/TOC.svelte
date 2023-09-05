@@ -3,7 +3,7 @@
 	import { onMount } from "svelte"
 
     export let headings: MarkdownHeading[]
-    headings = headings.filter(h => h.depth <= 2) // only include h2s
+    // headings = headings.filter(h => h.depth <= 2) // only include h2s
 
     let isActive = Object.fromEntries(headings.map(h => [h.slug, false]))
     onMount(() => {
@@ -21,8 +21,8 @@
 
 <ul class="space-y-2 border-l text-sm/6 border-slate-100 dark:border-slate-700">
     {#each headings as heading}
-        <li>
-            <a href="#{heading.slug}" class="block border-l pl-4 -ml-px {isActive[heading.slug] ? 'text-sky-500 border-current font-semibold dark:text-sky-400' : 'border-transparent hover:border-slate-400 dark:hover:border-slate-500 text-slate-700 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-300'}">
+        <li aria-level={heading.depth-1}>
+            <a href="#{heading.slug}" class="block border-l {heading.depth === 2 ? 'pl-4 font-semibold' : 'pl-6'} -ml-px {isActive[heading.slug] ? 'text-sky-500 border-current dark:text-sky-400' : 'border-transparent hover:border-slate-400 dark:hover:border-slate-500 text-slate-700 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-300'}">
                 {heading.text}
             </a>
         </li>

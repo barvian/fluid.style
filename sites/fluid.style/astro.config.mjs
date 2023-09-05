@@ -76,21 +76,6 @@ export default defineConfig({
     rehypePlugins: [
       rehypeHeadingIds, // include first so we can access them: https://docs.astro.build/en/guides/markdown-content/#heading-ids
       () => (tree, file) => {
-        // Split ~- with a span to add extra letter-spacing, because it can be indecipherable without it
-        // adapted from: https://github.com/GaiAma/Coding4GaiAma/blob/c6f0e2c98f1f2c328f9bbff2d1385f0130513510/packages/rehype-accessible-emojis/src/index.ts
-        flatMap(tree, (/** @type {import('unist').Literal<string>} */ node) => {
-          if (node.type !== 'text' || !/\~\-/.test(node.value)) return [node]
-
-          const split = node.value.split('~-').map(value => ({ type: 'text', value }))
-          return interleave(split, {
-            type: 'element',
-            tagName: 'span',
-            children: [{ type: 'text', value: '~-' }],
-            properties: {
-              'data-tilde-dash': ''
-            }
-          })
-        })
         // Add span with ID inside headings, so it can be positioned separately (for scrolling reasons)
         visit(tree, 'element', node => {
           if (/^h[2-6]$/.test(node.tagName) && node.properties?.id) {

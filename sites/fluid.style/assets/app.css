@@ -23,11 +23,6 @@ src: url('./fonts/Inter-roman-latin.var.woff2') format('woff2');
     :root {
         @apply min-h-screen motion-safe:scroll-smooth bg-white dark:bg-slate-900 antialiased overflow-x-hidden;
     }
-
-    [data-tilde-dash] {
-        /* ~- can look indecipherable, so add some tracking to it */
-        @apply !tracking-wide
-    }
 }
 
 @layer components {
@@ -45,10 +40,6 @@ src: url('./fonts/Inter-roman-latin.var.woff2') format('woff2');
         border-top: none !important;
         border-right-width: 1px !important;
         padding-block: 0.4rem !important;
-    }
-    
-    .ec .frame.has-title:not(.is-terminal) .header {
-        overflow: hidden !important; /* make sure title tabs gets clipped */
     }
     
     .ec .ec-line ins::before, .ec .ec-line del::before, .ec .ec-line mark::before {
@@ -76,7 +67,7 @@ src: url('./fonts/Inter-roman-latin.var.woff2') format('woff2');
     .ec pre {
         background: none !important;
         border: none !important;
-        border-left: 1.5px solid transparent !important; /* to pad between diff markers and edge */
+        border-left: 1px solid transparent !important; /* to pad between diff markers and edge */
     }
 
     .ec .frame .header {

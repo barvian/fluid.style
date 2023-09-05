@@ -80,8 +80,8 @@ export default {
 						'.ec': {
 							'@apply z-10 mt-5 mb-8': {}
 						},
-						'.ec:has(+ .ec)': {
-							'@apply mb-5': {}
+						'.ec+[data-info]': {
+							'@apply -mt-3': {}
 						}
 					}
 				},

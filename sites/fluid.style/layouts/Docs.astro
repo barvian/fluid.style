@@ -15,9 +15,9 @@ const root = searchForWorkspaceRoot(file)
 const path = relative(root, file)
 ---
 
-<div class="container grid grid-cols-1 lg:grid-cols-[15rem_minmax(0,1fr)] gap-x-6">
-	<div class="relative max-lg:hidden">
-		<div class="sticky top-10">
+<div class="container grid grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)] ~-lg ~gap-x-6/10">
+	<div class="relative max-lg:hidden ~w-[13rem]/[15rem]">
+		<div class="sticky -mt-10 top-0 ~-lg ~pr-6/10 py-10 max-h-screen overflow-y-auto">
 			<TOC {headings} client:load />
 		</div>
 	</div>
