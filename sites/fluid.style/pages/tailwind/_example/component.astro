@@ -11,9 +11,9 @@ import beachHouseInterior2 from './beach-house-interior-2.jpg'
         <p class="text-sm leading-4 font-medium text-white @xl:text-slate-500 dark:@xl:text-slate-400">Entire house</p>
         </div>
         <div class="grid gap-4 col-start-1 col-end-3 row-start-1 @xl:mb-6 @xl:grid-cols-4">
-        <img src={beachHouse.src} alt="" class="w-full h-60 object-cover rounded-lg @xl:h-52 @xl:col-span-2" loading="lazy">
-        <img src={beachHouseInterior.src} alt="" class="hidden w-full h-52 object-cover rounded-lg @xl:block @xl:col-span-2 @3xl:col-span-1" loading="lazy">
-        <img src={beachHouseInterior2.src} alt="" class="hidden w-full h-52 object-cover rounded-lg @3xl:block" loading="lazy">
+        <img src={beachHouse.src} alt="" class="w-full h-60 object-cover rounded-lg @xl:h-52 @xl:col-span-2" loading="eager">
+        <img src={beachHouseInterior.src} alt="" class="hidden w-full h-52 object-cover rounded-lg @xl:block @xl:col-span-2 @3xl:col-span-1" loading="eager">
+        <img src={beachHouseInterior2.src} alt="" class="hidden w-full h-52 object-cover rounded-lg @3xl:block" loading="eager">
         </div>
         <dl class="~@/3xl ~mt-4/2.5 text-xs font-medium flex items-center row-start-2 @xl:row-start-3">
         <dt class="sr-only">Reviews</dt>

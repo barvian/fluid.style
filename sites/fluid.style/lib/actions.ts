@@ -1,11 +1,12 @@
 import type { Action } from 'svelte/action'
+import type { Spring, Tweened } from 'svelte/motion'
 import { get, type Writable } from 'svelte/store'
 
 type ResizeOptions = {
 	direction: 'left' | 'right',
-	value: Writable<number>,
+	value: Writable<number> | Tweened<number> | Spring<number>,
 	double?: boolean,
-	resizing?: Writable<boolean>,
+	resizing?: Writable<boolean> ,
 	onStop?: () => void
 }
 export const resize: Action<HTMLButtonElement, ResizeOptions> = (node, { direction, value, resizing, double = false, onStop }) => {
@@ -19,7 +20,8 @@ export const resize: Action<HTMLButtonElement, ResizeOptions> = (node, { directi
 	}
 	function handleResize(e: PointerEvent) {
 		const delta = (direction === 'right') ? start - e.pageX : e.pageX - start
-		value.set(initial + delta * (double ? 2 : 1))
+		// @ts-expect-error not sure the best way to type these options:
+		value.set(initial + delta * (double ? 2 : 1), { hard: true, delay: 0, duration: 0 })
 	}
 	function stopResize() {
 		resizing?.set(false)

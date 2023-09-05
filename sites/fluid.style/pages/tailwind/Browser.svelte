@@ -1,15 +1,29 @@
 <script lang="ts">
 	import { resize } from "@lib/actions"
+	import { onMount } from "svelte"
+	import { cubicOut } from "svelte/easing"
+	import { tweened } from "svelte/motion"
     import { writable } from "svelte/store"
+	import { fade } from "svelte/transition"
 
     let cls = ''
     export { cls as class }
     
-    let margin = writable(0), resizing = writable(false)
+    let margin = tweened(800 /* biggest value */, { duration: 800, easing: cubicOut }), resizing = writable(false)
+    let showCursor = false, animating = false, didAnimate = false
+    onMount(() => {
+      setTimeout(() => showCursor = true, 500)
+      setTimeout(async () => {
+        animating = true
+        await margin.set(0)
+        animating = showCursor = false
+        didAnimate = true
+      }, 500/* initial delay */ + 200/* cursor fade-in duration */ + 600/* another delay */)
+    })
 </script>
 
-<div class="{cls} @container h-full" style:margin-right="clamp(0px, {$margin}px, 30%)">
-    <div class="shadow-xl rounded-xl h-full">
+<div class="{cls} @container h-full pointer-events-none">
+    <div class="shadow-xl relative @container rounded-xl h-full pointer-events-auto" style:margin-right="clamp(0px, {$margin}px, 100cqw - 320px)">
         <div class="rounded-xl ring-1 ring-slate-900/5 h-full flex flex-col items-stretch">
             <!-- Toolbar -->
             <div class="rounded-t-xl bg-gradient-to-b from-white to-[#FBFBFB] dark:bg-none dark:bg-slate-700 dark:highlight-white/10">
@@ -55,6 +69,12 @@
                 <slot />
             </div>
         </div>
+        {#if showCursor}
+          <!-- Fake pointer for intro animation -->
+          <div transition:fade={{ duration: 200 }} class="absolute -right-3.5 top-[56.5%] -mt-3.5 h-7 w-7 rounded-[100%] border-2 border-white/50 bg-black/50 transition" class:opacity-50={!animating} class:scale-[85%]={animating} />
+        {/if}
+        {#if didAnimate}
+            <button tabindex="-1" draggable="false" class="h-full touch-pan-y absolute -right-1 top-0 w-2 opacity-0 cursor-ew-resize" aria-label="Resize" use:resize={{ direction: 'right', value: margin, resizing }} />
+        {/if}
     </div>
-    <button tabindex="-1" class="h-full absolute -right-1 top-0 w-2 opacity-0 cursor-ew-resize" aria-label="Resize" use:resize={{ direction: 'right', value: margin, resizing }} />
 </div>

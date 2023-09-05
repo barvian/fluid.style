@@ -15,7 +15,7 @@ const root = searchForWorkspaceRoot(file)
 const path = relative(root, file)
 ---
 
-<div class="container grid grid-cols-1 lg:grid-cols-[15rem_minmax(0,1fr)] gap-6">
+<div class="container grid grid-cols-1 lg:grid-cols-[15rem_minmax(0,1fr)] gap-x-6">
 	<div class="relative max-lg:hidden">
 		<div class="sticky top-10">
 			<TOC {headings} client:load />
@@ -26,7 +26,7 @@ const path = relative(root, file)
 			<slot />
 		</article>
 	</main>
-	<footer class="text-sm lg:col-start-2 pt-10 pb-28 border-t border-slate-200 sm:flex justify-between text-slate-500 dark:border-slate-200/5">
+	<footer class="text-sm mt-16 lg:col-start-2 pt-10 pb-28 border-t border-slate-200 sm:flex justify-between text-slate-500 dark:border-slate-200/5">
 		<div class="mb-6 sm:mb-0 sm:flex">
 			<p>Copyright ©2023. Not affiliated with Tailwind Labs Inc.</p>
 		</div>
