@@ -43,6 +43,8 @@ src: url('./fonts/Inter-roman-latin.var.woff2') format('woff2');
         line-height: 1.625rem !important;
         border-left: none !important;
         border-top: none !important;
+        border-right-width: 1px !important;
+        padding-block: 0.4rem !important;
     }
     
     .ec .frame.has-title:not(.is-terminal) .header {
@@ -64,6 +66,42 @@ src: url('./fonts/Inter-roman-latin.var.woff2') format('woff2');
 
     .ec .frame .header, .ec pre {
         border-radius: 0 !important;
+    }
+
+    /* Fix background and borders */
+    .ec .frame {
+        background: var(--code-background) !important;
+    }
+
+    .ec pre {
+        background: none !important;
+        border: none !important;
+        border-left: 1.5px solid transparent !important; /* to pad between diff markers and edge */
+    }
+
+    .ec .frame .header {
+        border: none !important;
+    }
+
+    .ec .frame .header::after {
+        border-bottom-width: 1px !important;
+    }
+
+    .ec .frame.is-terminal .header {
+        padding-block: 0.4rem !important;
+    }
+
+    .ec .copy button {
+        border-width: 1px !important;
+    }
+
+    /* Fix copy button position */
+    .ec .frame.has-title.is-terminal {
+        --button-spacing: 2.5rem !important;
+    }
+
+    .ec .frame:not(.is-terminal).has-title {
+        --button-spacing: 3rem !important;
     }
 
     /* Fix vertical scrolling */

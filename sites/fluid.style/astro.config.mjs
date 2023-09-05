@@ -18,28 +18,28 @@ const codeOptions = {
     codeFontFamily: 'Fira Code VF',
     codeFontSize: '0.875rem',
     codePaddingBlock: '1.25rem',
-    borderRadius: '0.75rem',
-    // codePaddingInline: '1.25rem'
+    borderRadius: '0.75rem'
   },
   useThemedScrollbars: false,
   frames: {
     extractFileNameFromCode: false,
     styleOverrides: {
+      terminalBackground: '#1e293b',
       terminalTitlebarDotsForeground: '#475569',
       terminalTitlebarBorderBottom: '#64748b4d',
-      terminalTitlebarBackground: 'rgb(39,46,64)',
+      terminalTitlebarBackground: '#1e293b',
       inlineButtonBorder: '#494f66',
       inlineButtonForeground: '#94a3b8',
       tooltipSuccessBackground: '#0ea5e9',
       tooltipSuccessForeground: '#fff',
       inlineButtonHoverOrFocusBackground: '#33415580',
-      editorBackground: 'rgb(30,36,52)',
+      editorBackground: '#1e293b',
       editorActiveTabForeground: '#7dd3fc',
-      editorActiveTabBackground: 'rgb(30,36,52)',
+      editorActiveTabBackground: '#1e293b',
       editorActiveTabBorder: '#64748b4d',
       editorTabBarBorderBottom: '#64748b4d',
       editorActiveTabBorderBottom: '#7dd3fc',
-      editorTabBarBackground: 'rgb(39,46,64)',
+      editorTabBarBackground: '#33415580',
       editorTabBorderRadius: '0',
       frameBoxShadowCssValue: "0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a"
     }
