@@ -217,6 +217,8 @@ can with i.e. `-mt-3`, because Tailwind would only negate the start value.
     ### Customizing default containers
 
     The default [containers](#containers) can be set in the same way as screens.
+    Either value can be omitted, in which case the plugin will use the smallest and
+    largest container, respectively.
   </>
   ```ts title="tailwind.config.ts" mark={6}
   import { ..., type ThemeConfigFluid } from '@fluidstyle/tailwindcss-plugin'
@@ -225,23 +227,6 @@ can with i.e. `-mt-3`, because Tailwind would only negate the start value.
     theme: {
       fluid: {
         defaultContainers: [, '6xl']
-      } satisfies ThemeConfigFluid
-    }
-  }
-  ```
-  <>
-    ### Container by default
-
-    If for some reason you wanted fluid values to be relative to the nearest container
-    rather than the viewport by default, you can set the `containerByDefault` option to `true`.
-  </>
-  ```ts title="tailwind.config.ts" mark={6}
-  import { ..., type ThemeConfigFluid } from '@fluidstyle/tailwindcss-plugin'
-
-  export default {
-    theme: {
-      fluid: {
-        containerByDefault: true
       } satisfies ThemeConfigFluid
     }
   }
