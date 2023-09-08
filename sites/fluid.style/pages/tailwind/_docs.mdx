@@ -138,7 +138,7 @@ the included `~` variant. For example:
 <Resizer client:load height="h-32">
   <span class="text-slate-900 dark:text-slate-100 font-semibold ~text-base/4xl ~@-xl/2xl text-center block">Quick increase</span>
 </Resizer>
-```html mark="~from-md:~to-lg:"
+```html mark="~md/lg:"
 <h1 class="~md/lg:~text-base/4xl">Quick increase</h1>
 ```
 
@@ -159,7 +159,7 @@ You can omit either start or end screen to use your [global defaults](#customizi
 If you have the [official container query](https://github.com/tailwindlabs/tailwindcss-container-queries) plugin
 installed, you can make the start/end points relative to the nearest `@container` with the `~@` variant:
 
-```html mark="~to-@xl:"
+```html mark="~@md/lg:"
 <h1 class="~@md/lg:~text-base/4xl">Relative to container</h1>
 ```
 <Tip.Info>This may look confusing if you use [named containers](https://github.com/tailwindlabs/tailwindcss-container-queries#named-containers). Sorry about that; there's only so many ways to get values into Tailwind. In general, when you see the fluid `~` prefix, you know the `/` denotes a start/end pair.</Tip.Info>
@@ -346,7 +346,7 @@ export default {
 ### Arbitrary values in `~` variant
 
 If you want to set an arbitrary start screen with the `~` variant, you have to use
-`~min-[]` (just as you'd have to use `min-[]` to set an [arbitrary screen breakpoint](https://tailwindcss.com/docs/responsive-design#arbitrary-values):
+`~min-[]` (just as you'd have to use `min-[]` to set an [arbitrary screen breakpoint](https://tailwindcss.com/docs/responsive-design#arbitrary-values)):
 
 <Tip.Bad>Trying to use `~[]:` to set an arbitrary start screen</Tip.Bad>
 ```html
@@ -366,7 +366,7 @@ container or media queries, as such:
 <Resizer client:load height="h-32">
   <span class="text-slate-900 dark:text-slate-100 font-semibold italic ~text-base/4xl ~@-lg/2xl @2xl:~@-2xl/4xl @2xl:~text-4xl/base text-center block">Whoa!</span>
 </Resizer>
-```html mark="~to-md:" mark="lg:~from-lg:"
+```html mark="~/md:" mark="lg:~lg:"
 <h1 class="~/md:~text-base/4xl lg:~lg:~text-4xl/base">Whoa!</h1>
 ```
 
@@ -377,10 +377,11 @@ is our `md` screen
 when the viewport is our `lg` screen
 
 `lg:~lg:` is pretty repetitive, though, so the plugin includes a simpler
-way to handle it. If you use the fluid variants **before** any built-in screen or container variants,
-the fluid variants will infer the start/end points from the built-in variants and use those as defaults rather than the global defaults from `theme.fluid`. For example:
+way to handle it. Fluid variants will infer the start/end points from any screen or container variants **after** them,
+and use those as the defaults rather than the global defaults.
+For example:
 
-```html
+```html del="lg:~lg:" ins="~:lg:" del="min-[40rem]:~min-[40rem]/xl:" ins="~/xl:min-[40rem]:" del="@lg:~@lg:" ins="~:@lg:"
 <!-- These are equivalent: -->
 <h1 class="lg:~lg:~text-4xl/base">Whoa!</h1>
 <h1 class="~:lg:~text-4xl/base">Whoa!</h1>
@@ -389,6 +390,6 @@ the fluid variants will infer the start/end points from the built-in variants an
 <h1 class="~/xl:min-[40rem]:~text-4xl/base">Whoa!</h1>
 
 <!-- Container version: -->
-<h1 class="@lg:~from-@lg:~text-4xl/base">Whoa!</h1>
+<h1 class="@lg:~@lg:~text-4xl/base">Whoa!</h1>
 <h1 class="~:@lg:~text-4xl/base">Whoa!</h1>
 ```
