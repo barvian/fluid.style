@@ -117,7 +117,7 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
 ## Basic usage
 
 <Resizer client:load height="h-32">
-  <button class="bg-sky-500 hover:bg-sky-700 ~@-md/2xl ~px-4/8 ~py-2/4 ~text-sm/xl leading-[1.25] rounded-full font-semibold text-white">Fluid button</button>
+  <button class="bg-sky-500 hover:bg-sky-700 ~@lg/2xl:~px-4/8 ~@lg/2xl:~py-2/4 ~@lg/2xl:~text-sm/xl leading-[1.25] rounded-full font-semibold text-white">Fluid button</button>
 </Resizer>
 ```html mark=/(\~.*?)\s+/
 <button class="bg-sky-500 ~px-4/8 ~py-2/4 ~text-sm/xl ...">Whoa!</h1>
@@ -130,13 +130,13 @@ Here's a quick overview:
 * Fluid utilities interpolate between their start value and end value when the viewport is between the start point and end point, respectively
 * The start and end points default to the smallest and largest screen, but [they can be configured globally](#customizing-default-screens) or per-utility (below)
 
-### Screens
+### Customizing screens
 
 You can change the start/end screens for an individual fluid utility with
 the included `~` variant. For example:
 
 <Resizer client:load height="h-32">
-  <span class="text-slate-900 dark:text-slate-100 font-semibold ~text-base/4xl ~@-xl/2xl text-center block">Quick increase</span>
+  <span class="text-slate-900 dark:text-slate-100 font-semibold ~@xl/2xl:~text-base/4xl text-center block">Quick increase</span>
 </Resizer>
 ```html mark="~md/lg:"
 <h1 class="~md/lg:~text-base/4xl">Quick increase</h1>
@@ -145,16 +145,16 @@ the included `~` variant. For example:
 You can omit either start or end screen to use your [global defaults](#customizing-default-screens):
 
 <Tip.Good>Set start screen to `md`, end screen as default</Tip.Good>
-```html
+```html mark="~md:"
 <div class="~md:~text-base/4xl">
 ```
 
 <Tip.Good>Set end screen to `lg`, start screen as default</Tip.Good>
-```html
+```html mark="~/lg:"
 <div class="~/lg:~text-base/4xl">
 ```
 
-### Containers
+### Customizing containers
 
 If you have the [official container query](https://github.com/tailwindlabs/tailwindcss-container-queries) plugin
 installed, you can make the start/end points relative to the nearest `@container` with the `~@` variant:
@@ -167,7 +167,7 @@ installed, you can make the start/end points relative to the nearest `@container
 Just like the `~` variant, both start and end containers are optional and will use your [global defaults](#customizing-default-containers) if unset.
 
 <Tip.Good>Set end container to `lg`, start container as default</Tip.Good>
-```html
+```html mark="~@/lg:"
 <div class="~@/lg:~text-base/4xl">
 ```
 
@@ -183,7 +183,7 @@ as mentioned in [installation instructions](#use-rem-for-screens), but it can be
 to keep in mind when designing.
 
 <Tip.Bad>Trying to set `font-size` in `rem` when the screens are in `px`</Tip.Bad>
-<Split rows='grid-rows-[auto]'>
+<Split rows="grid-rows-[auto]">
   ```html
   <h1 class="~text-lg/xl">
   ```
@@ -364,7 +364,7 @@ To really get crazy, you can combine fluid values with
 container or media queries, as such:
 
 <Resizer client:load height="h-32">
-  <span class="text-slate-900 dark:text-slate-100 font-semibold italic ~text-base/4xl ~@-lg/2xl @2xl:~@-2xl/4xl @2xl:~text-4xl/base text-center block">Whoa!</span>
+  <span class="text-slate-900 dark:text-slate-100 font-semibold italic ~@lg/2xl:~text-base/4xl @2xl:~@2xl/4xl:~text-4xl/base text-center block">Whoa!</span>
 </Resizer>
 ```html mark="~/md:" mark="lg:~lg:"
 <h1 class="~/md:~text-base/4xl lg:~lg:~text-4xl/base">Whoa!</h1>
@@ -376,11 +376,8 @@ is our `md` screen
 1. When we get to our `lg` screen, we interpolate between the opposite `4xl` and `base`, starting
 when the viewport is our `lg` screen
 
-`lg:~lg:` is pretty repetitive, though, so the plugin includes a simpler
-way to handle it. Fluid variants will infer the start/end points from any screen or container variants **after** them,
-and use those as the defaults rather than the global defaults.
-For example:
-
+(Admittedly, `lg:~lg:` is pretty repetitive, so it may try to be simplified in the future.)
+{/* 
 ```html del="lg:~lg:" ins="~:lg:" del="min-[40rem]:~min-[40rem]/xl:" ins="~/xl:min-[40rem]:" del="@lg:~@lg:" ins="~:@lg:"
 <!-- These are equivalent: -->
 <h1 class="lg:~lg:~text-4xl/base">Whoa!</h1>
@@ -392,4 +389,4 @@ For example:
 <!-- Container version: -->
 <h1 class="@lg:~@lg:~text-4xl/base">Whoa!</h1>
 <h1 class="~:@lg:~text-4xl/base">Whoa!</h1>
-```
+``` */}

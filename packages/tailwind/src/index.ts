@@ -3,26 +3,20 @@ type Plugin = ReturnType<typeof plugin>
 // @ts-expect-error untyped source file
 import { corePlugins } from 'tailwindcss/lib/corePlugins'
 import { PluginAPI, PluginCreator } from 'tailwindcss/types/config'
-import { log, includeKeys, mapObject, CSSLength, type RawValue } from './util'
+import { log, LogLevel, mapObject, CSSLength, type RawValue, generateExpr, addVariantWithModifier, parseExpr, unique } from './util'
 import defaultTheme from 'tailwindcss/defaultTheme'
-
-const SCREEN_SCRUBBER = '100vw'
-const CONTAINER_SCRUBBER = '100cqw'
+import { Container } from 'postcss'
+import { mapObjectSkip } from 'map-obj'
 
 export type ThemeConfigFluid = Partial<{
     defaultScreens: [string] | [undefined, string] | [string, string],
-    defaultContainers: [string] | [undefined, string] | [string, string],
-    containerByDefault: boolean
+    defaultContainers: [string] | [undefined, string] | [string, string]
 }>
 
 export const fluidCorePlugins = plugin((api: PluginAPI) => {
-    const { theme, corePlugins: corePluginEnabled, addBase, matchUtilities } = api
+    const { theme, corePlugins: corePluginEnabled, addVariant, matchVariant } = api
     const context = getContext(theme)
-    const {
-        screens, defaultFromScreen, defaultToScreen,
-        containers, defaultFromContainer, defaultToContainer,
-        containerByDefault, defaultFromBP, defaultToBP
-    } = context
+    const { screens, containers } = context
 
     // Add fluid versions for enabled core plugins
     const interceptedAPI = interceptUtilities(api, {
@@ -39,87 +33,81 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
         p(interceptedAPI)
     })
 
-    // And ~ utility to configure screen breakpoints
-    if (screens) matchUtilities({
-        '~'(_fromBP, { modifier: _toBP }) {
-            const parsed = parseValues(
-                _fromBP,
-                _toBP ?? defaultToScreen.cssText, // Tailwind doesn't use default for modifiers, it just passes it as null
-                context,
-                { warn: true }
-            )
-            if (!parsed) return null
-            const [fromBP, toBP] = parsed
+    // Screen variants
+    // ---
 
-            return {
-                // Only need to change the scrubber if they use container by default:
-                [`--fluid-scrubber`]: containerByDefault ? SCREEN_SCRUBBER : null,                
-                // You always have to set these next two, because it could be in a media query i.e.
-                // ~p-4/8 ~/md md:~p-8/12 md:~-md
-                //         ^ (1)              ^ if this doesn't overwrite the toBP, it'll still be md from (1)
-                [`--fluid-from-bp`]: fromBP.number+'',
-                [`--fluid-to-bp`]: toBP.number+'',
-            }
-        }
-    }, {
-        values: { ...screens, DEFAULT: defaultFromScreen.cssText },
-        modifiers: screens
-    })
     if (screens?.DEFAULT) {
         log.warn('inaccessible-breakpoint', [
-            `Your DEFAULT screen breakpoint must be renamed to be used in fluid utilities`
+            `Your DEFAULT screen breakpoint must be renamed to be used in fluid variants`
         ])
     }
 
-    // And ~@ utility to configure container breakpoints
-    if (containers) matchUtilities({
-        '~@'(_fromBP, { modifier: _toBP }) {
-            const parsed = parseValues(
-                _fromBP,
-                _toBP ?? defaultToContainer.cssText, // Tailwind doesn't use default for modifiers, it just passes it as null
-                context,
-                { warn: true }
+    Object.entries(screens).forEach(([s1Key, s1]) => {
+        // Add `~screen/screen` variants
+        Object.entries(screens).forEach(([s2Key, s2]) => {
+            if (s2Key === s1Key) return
+            // @ts-expect-error undocumented API
+            addVariant(`~${s1Key}/${s2Key}`, ({ container }: { container: Container }) =>
+                rewriteExprs(container, context, [s1, s2])
             )
-            if (!parsed) return null
-            const [fromBP, toBP] = parsed
+        })
 
-            return {
-                // Only need to change the scrubber if they prefer screens:
-                '--fluid-scrubber': containerByDefault ? null : CONTAINER_SCRUBBER,                
-                // See note above for why you always set these two:
-                '--fluid-from-bp': fromBP.number+'',
-                '--fluid-to-bp': toBP.number+'',
-            }
-        }
-    }, {
-        values: { ...containers, DEFAULT: defaultFromContainer.cssText },
-        modifiers: containers,
+        // Add `~screen/[arbitrary]?` variants
+        addVariantWithModifier(api, `~${s1Key}`, ({ container, modifier }) =>
+            rewriteExprs(container, context, [s1, modifier])
+        )
+
+        // Add `~/screen` variants
+        // @ts-expect-error undocumented API
+        addVariant(`~/${s1Key}`, ({ container }) => 
+            rewriteExprs(container, context, [, s1])
+        )
     })
+
+    // Add `~/[arbitrary]` variant
+    addVariantWithModifier(api, '~', ({ modifier, container }) =>
+        rewriteExprs(container, context, [, modifier])
+    )
+
+    // Add `~min-[arbitrary]/screen|[arbitrary]` variant
+    // @ts-expect-error undocumented API
+    matchVariant('~min', (value, { modifier, container }: { modifier: string | null, container: Container }) => 
+        rewriteExprs(container, context, [value, modifier])
+    )
+
+    // Container variants
+    // ---
+    if (!containers) return // ensure official container query plugin exists
+
     if (containers?.DEFAULT) {
         log.warn('inaccessible-breakpoint', [
-            `Your DEFAULT container breakpoint must be renamed to be used in fluid utilities`
+            `Your DEFAULT container breakpoint must be renamed to be used in fluid variants`
         ])
     }
-    
-    // Prevent cascading variables
-    // TODO: maybe use @property for this when it's better supported?
-    addBase({
-        '[class~="~-"], [class~="~/"]': {
-            ':where(& > *)': {
-                // Screen reset
-                '--fluid-scrubber': containerByDefault ? CONTAINER_SCRUBBER : null,
-                '--fluid-from-bp': defaultFromBP.number+'',
-                '--fluid-to-bp': defaultToBP.number+''
-            }
-        },
-        '[class~="~@"]': {
-            ':where(& > *)': {
-                // Container reset
-                '--fluid-scrubber': containerByDefault ? null : SCREEN_SCRUBBER,
-                '--fluid-from-bp': defaultFromBP.number+'',
-                '--fluid-to-bp': defaultToBP.number+''
-            }
-        }
+
+    Object.entries(containers).forEach(([c1Key, c1]) => {
+        // Add `~@container/container` variants
+        Object.entries(containers).forEach(([c2Key, c2]) => {
+            if (c2Key === c1Key) return
+            // @ts-expect-error undocumented API
+            addVariant(`~@${c1Key}/${c2Key}`, ({ container }: { container: Container }) =>
+                rewriteExprs(container, context, [c1, c2], true)
+            )
+        })
+
+        // Add `~@/container` variants
+        // @ts-expect-error undocumented API
+        addVariant(`~@/${c1Key}`, ({ container }) => 
+            rewriteExprs(container, context, [, c1], true)
+        )
+    })
+
+    // Add ~@[arbitrary]|container/[arbitrary]|container variant
+    // @ts-expect-error undocumented API
+    matchVariant('~@', (value, { modifier, container }: { modifier: string | null, container: Container }) => (
+        rewriteExprs(container, context, [value, modifier])
+    ), {
+        values: containers
     })
 })
 
@@ -183,13 +171,13 @@ function interceptUtilities(api: PluginAPI, {
                     transform?.[util]?.(_from) ?? transform?.DEFAULT?.(_from) ?? _from,
                     transform?.[util]?.(_to) ?? transform?.DEFAULT?.(_to) ?? _to,
                     context,
-                    { warn: true }
+                    LogLevel.WARN
                 )
                 if (!parsed) return null
                 const [from, to] = parsed
                 
                 return origFn(
-                    generateClamp(from, to, context),
+                    generateExpr(from, context.defaultFromScreen, to, context.defaultToScreen),
                     { modifier: null } // don't pass along the modifier
                 )
             } satisfies typeof origFn]
@@ -205,10 +193,10 @@ function interceptUtilities(api: PluginAPI, {
     return { ...rest, matchUtilities, matchComponents: matchUtilities }
 }
 
-function parseValue(_val: any, { unit, theme }: Context, { warn = false } = {}) {
+function parseValue(_val: any, { unit, theme }: Context, level?: LogLevel) {
     if (!_val) return null
     if (typeof _val === 'string') {
-        // Test if it's a theme function
+        // Test if it's a theme() function
         const [, sign, lookup] = _val.match(/^([+-]?)theme\((.*?)\)$/) ?? []
         if (lookup) {
             _val = sign+theme(lookup)
@@ -216,15 +204,17 @@ function parseValue(_val: any, { unit, theme }: Context, { warn = false } = {}) 
     }
     const val = CSSLength.parse(_val)
     if (!val) {
-        if (warn) log.warn('non-lengths', [
+        if (level) log.warn('non-lengths', [
             'Fluid utilities can only work with length values'
         ])
+        if (level === LogLevel.RISK) throw new Error()
         return null
     }
     if (val.unit !== unit) {
-        if (warn) log.warn('mismatching-units', [
-            `Fluid utilities' value units must match breakpoint units`
+        if (level) log.warn('mismatching-units', [
+            `Fluid units must all match`
         ])
+        if (level === LogLevel.RISK) throw new Error()
         return null
     }
     return val
@@ -233,42 +223,71 @@ function parseValue(_val: any, { unit, theme }: Context, { warn = false } = {}) 
 function parseValues(
     _from: any, _to: any,
     context: Context,
-    { warn = false } = {}
+    level?: LogLevel
 ) {
     if (!_from || !_to) {
-        if (warn) log.warn('missing-values', [
+        if (level) log.warn('missing-values', [
             'Fluid utilities require two values'
         ])
+        if (level === LogLevel.RISK) throw new Error()
         return null
     }
-    const from = parseValue(_from, context)
-    const to = parseValue(_to, context)
+    const from = parseValue(_from, context, level)
+    const to = parseValue(_to, context, level)
     if (!from || !to) return null
 
     if (from.number === to.number) {
-        if (warn) log.warn('no-change', [
+        if (level) log.warn('no-change', [
             'Fluid utilities require two distinct values'
         ])
+        if (level === LogLevel.RISK) throw new Error()
         return null
     }
     return [from, to] as const
 }
 
-function generateClamp(
-    from: CSSLength, to: CSSLength, 
-    { defaultFromBP, defaultToBP, defaultScrubber }: Context,
-) {
-    const unit = from.unit // you can technically get it from any of the values
+class NoChangeBPError extends Error {}
+function rewriteExprs(container: Container, context: Context, [_fromBP, _toBP]: [CSSLength | RawValue, CSSLength | RawValue], atContainer?: string | true) {
+    try {
+        const fromBP = (typeof _fromBP === 'string')
+            // It's arbitrary, so parse it
+            ? parseValue(_fromBP, context, LogLevel.RISK)
+            : _fromBP
+        
+        const toBP = (typeof _toBP === 'string')
+            // Check if it's [arbitrary] (i.e. from a modifier)
+            ? /^\[(.*?)\]$/.test(_toBP)
+                // Unwrap and parse if it's arbitrary
+                ? parseValue(_toBP.match(/^\[(.*?)\]$/)?.[1], context, LogLevel.RISK)
+                // Otherwise, try to look it up from the theme
+                : context[atContainer ? 'containers' : 'screens']?.[_toBP]
+            : _toBP
 
-    const fromBPNumber = `var(--fluid-from-bp,${defaultFromBP.number})`
-    const fromBPLength = `${fromBPNumber}*1${unit}`
-    const toBPNumber = `var(--fluid-to-bp,${defaultToBP.number})`
-    const scrubber = `var(--fluid-scrubber,${defaultScrubber})`
-    const min = `${Math.min(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
-    const max = `${Math.max(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
-    const delta = to.number - from.number
+        
+        const defaultFromBP = atContainer ? context.defaultFromContainer! : context.defaultFromScreen
+        const defaultToBP = atContainer ? context.defaultToContainer! : context.defaultToScreen
+            
+        // Walk through each `property: value` and rewrite any fluid expressions
+        container.walkDecls((decl) => {
+            const parsed = parseExpr(decl.value)
+            if (!parsed) return
+            const resolvedFromBP = fromBP ?? defaultFromBP
+            const resolvedToBP = toBP ?? defaultToBP
+            if (resolvedFromBP.number === resolvedToBP.number) {
+                throw new NoChangeBPError()
+            }
 
-    return `clamp(${min},${from.number}${unit} + (${scrubber} - ${fromBPLength})/(${toBPNumber} - ${fromBPNumber})${delta === 1 ? '' : `*${delta}`/* save a multiplication by 1 */},${max})`
+            decl.value = generateExpr(parsed.from, resolvedFromBP, parsed.to, resolvedToBP, atContainer)
+        })
+    } catch (e) {
+        if (e instanceof NoChangeBPError) {
+            log.warn('no-change', [
+                'Fluid utilities require two distinct values'
+            ])
+        }
+        return [] as const
+    }
+    return '&'
 }
 
 function getContext(theme: PluginAPI['theme']) {
@@ -280,7 +299,7 @@ function getContext(theme: PluginAPI['theme']) {
         if (bpsType === 'container' && !rawBps) return [] as const
 
         // Get all "simple" breakpoints (i.e. just a length, not an object)
-        const bps = includeKeys(rawBps!, (_, v) => typeof v === 'string' && CSSLength.test(v)) as Record<string, string> // TS can't infer based on the filter
+        const bps = mapObject(rawBps!, (k, v) => CSSLength.test(v) ? [k as string, CSSLength.parse(v)] : mapObjectSkip) as Record<string, CSSLength>
         const defaultsKey = bpsType === 'container' ? 'defaultContainers' : 'defaultScreens'
         
         let sortedBreakpoints: CSSLength[]
@@ -298,13 +317,12 @@ function getContext(theme: PluginAPI['theme']) {
                 if (!bpsVals.length) {
                     throw new Error(`Cannot resolve \`theme.fluid.${defaultsKey}[${bpType === 'from' ? 0 : 1}]\` because there's no simple values in \`theme.${bpsKey}\``)
                 }
-                const parsedBpsVals = bpsVals.map(v => CSSLength.parse(v)!)
                 // Error if they have different units (can't sort that way)
-                if (new Set(parsedBpsVals.map(l => l.unit!)).size > 1) {
+                if (unique(bpsVals.map(l => l.unit!)) > 1) {
                     throw new Error(`Cannot resolve \`theme.fluid.${defaultsKey}[${bpType === 'from' ? 0 : 1}]\` because \`theme.${bpsKey}\` contains values of different units`)
                 }
 
-                return parsedBpsVals.sort((a, b) => a.number - b.number)
+                return bpsVals.sort((a, b) => a.number - b.number)
             })()
             return sortedBreakpoints[bpType === 'from' ? 0 : sortedBreakpoints.length-1]
         }
@@ -315,20 +333,14 @@ function getContext(theme: PluginAPI['theme']) {
 
     const [screens, defaultFromScreen, defaultToScreen] = getBreakpoints('screen')
     const [containers, defaultFromContainer, defaultToContainer] = getBreakpoints('container')
-    const containerByDefault = fluid.containerByDefault === true
-    const units = [...new Set([defaultFromScreen!.unit, defaultToScreen!.unit])]
-    if (units.length !== 1 || units[0] == null) {
+    if (unique([defaultFromScreen!.unit, defaultToScreen!.unit]) !== 1 || defaultFromScreen!.unit == null) {
         throw new Error(`All default fluid breakpoints must have the same units`)
     }
     return {
         theme,
-        screens, defaultFromScreen, defaultToScreen,
+        screens: screens!, defaultFromScreen: defaultFromScreen!, defaultToScreen: defaultToScreen!,
         containers, defaultFromContainer, defaultToContainer,
-        containerByDefault,
-        defaultScrubber: containerByDefault ? CONTAINER_SCRUBBER : SCREEN_SCRUBBER,
-        defaultFromBP: containerByDefault ? defaultFromContainer : defaultFromScreen,
-        defaultToBP: containerByDefault ? defaultToContainer : defaultToScreen,
-        unit: units[0] as string
+        unit: defaultFromScreen!.unit
     }
 }
 type Context = ReturnType<typeof getContext>

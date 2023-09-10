@@ -11,6 +11,13 @@ import flattenColorPalette from 'tailwindcss/lib/util/flattenColorPalette'
 export default {
 	content: {
 		files: ['./{pages,layouts,components}/**/*.{html,js,svelte,ts,astro,mdx}'],
+		transform: {
+			mdx: (src) => src
+				// Get rid of code blocks
+				.replaceAll(/```.*?```/gs, '')
+				// Only return stuff in <component>s
+				.match(/<[^/].*?>/g)?.join() ?? ''
+		},
 		extract: buildFluidExtract()
 	},
 	corePlugins: {

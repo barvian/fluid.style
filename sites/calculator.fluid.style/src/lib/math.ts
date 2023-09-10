@@ -1,15 +1,4 @@
-const to10thFmt = new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 1,
-    useGrouping: false
-})
-const to100thFmt = new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 2,
-    useGrouping: false
-})
-const to1000thFmt = new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 3,
-    useGrouping: false
-})
+import { toPrecision } from "../../../../packages/tailwind/src/util"
 
 export const UNITS = ['rem', 'px'] as const
 export type Unit = typeof UNITS[number]
@@ -18,9 +7,9 @@ export type Range = [number, number]
 
 export const clamp = (min: number, val: number, max: number) => Math.min(Math.max(min, val), max)
 
-export const to10th = to10thFmt.format
-export const to100th = to100thFmt.format
-export const to1000th = to1000thFmt.format
+export const to10th = (n: number) => toPrecision(n, 1)
+export const to100th = (n: number) => toPrecision(n, 2)
+export const to1000th = (n: number) => toPrecision(n, 3)
 
 export const inRange = (val: number, range?: Range) => range && (range[0] < val && val < range[1])
 

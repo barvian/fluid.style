@@ -4,10 +4,10 @@ import beachHouseInterior from './beach-house-interior.jpg'
 import beachHouseInterior2 from './beach-house-interior-2.jpg'
 ---
 
-<main class="~@/3xl ~py-6/10 ~px-4/8">
+<main class="~@/3xl:~py-6/10 ~@/3xl:~px-4/8">
     <div class="max-w-4xl mx-auto grid grid-cols-1">
         <div class="relative p-3 col-start-1 row-start-1 flex flex-col-reverse rounded-lg bg-gradient-to-t from-black/75 via-black/0 @lg:bg-none @lg:row-start-2 @lg:p-0">
-        <h1 class="mt-1 ~@/3xl ~text-lg/2xl font-semibold text-white @lg:text-slate-900 dark:@lg:text-white">Beach House in Collingwood</h1>
+        <h1 class="mt-1 ~@/3xl:~text-lg/2xl font-semibold text-white @lg:text-slate-900 dark:@lg:text-white">Beach House in Collingwood</h1>
         <p class="text-sm leading-4 font-medium text-white @lg:text-slate-500 dark:@lg:text-slate-400">Entire house</p>
         </div>
         <div class="grid gap-4 col-start-1 col-end-3 row-start-1 @lg:mb-6 @lg:grid-cols-4">
@@ -15,7 +15,7 @@ import beachHouseInterior2 from './beach-house-interior-2.jpg'
         <img src={beachHouseInterior.src} alt="" class="hidden w-full h-52 object-cover rounded-lg @lg:block @lg:col-span-2 @2xl:col-span-1" loading="eager">
         <img src={beachHouseInterior2.src} alt="" class="hidden w-full h-52 object-cover rounded-lg @2xl:block" loading="eager">
         </div>
-        <dl class="~@/3xl ~mt-4/2.5 text-xs font-medium flex items-center row-start-2 @lg:row-start-3">
+        <dl class="~@/3xl:~mt-4/2.5 text-xs font-medium flex items-center row-start-2 @lg:row-start-3">
         <dt class="sr-only">Reviews</dt>
         <dd class="text-indigo-600 flex items-center dark:text-indigo-400">
             <svg width="24" height="24" fill="none" aria-hidden="true" class="mr-1 stroke-current dark:stroke-indigo-500">
@@ -38,7 +38,7 @@ import beachHouseInterior2 from './beach-house-interior-2.jpg'
         <div class="mt-4 col-start-1 row-start-3 self-center @lg:mt-0 @lg:col-start-2 @lg:row-start-2 @lg:row-span-2">
         <button type="button" class="bg-indigo-600 text-white text-sm leading-6 font-medium py-2 px-3 rounded-lg">Check availability</button>
         </div>
-        <p class="mt-4 ~@/3xl ~text-sm/base leading-6 col-start-1 @lg:col-span-2 dark:text-slate-400">
+        <p class="mt-4 ~@/3xl:~text-sm/base leading-6 col-start-1 @lg:col-span-2 dark:text-slate-400">
         This sunny and spacious room is for those traveling light and looking for a comfy and cosy place to lay their head for a night or two. This beach house sits in a vibrant neighborhood littered with cafes, pubs, restaurants and supermarkets and is close to all the major attractions such as Edinburgh Castle and Arthur's Seat.
         </p>
     </div>
