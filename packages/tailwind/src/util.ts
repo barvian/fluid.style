@@ -44,7 +44,12 @@ export const precision = (num: number) => {
     return num.toString().split(".")[1].length || 0
 }
 
+export const clamp = (min: number, n: number, max: number) => Math.min(Math.max(n, min), max)
+
 export const unique = (iter: Iterable<any>) => new Set(iter).size
+
+// Like nullish coalesce except it's for undefined:
+export const coalesce = <T, U>(first: T, second: U) => first === undefined ? second : first
 
 export function generateExpr(
     from: CSSLength, fromBP: CSSLength, to: CSSLength, toBP: CSSLength,
@@ -57,7 +62,20 @@ export function generateExpr(
     const max = `${Math.max(from.number, to.number)}${unit}` // CSS requires the min < max in a clamp
     const slope = (to.number - from.number) / (toBP.number - fromBP.number)
     const intercept = from.number - (fromBP.number * slope)
-    const comment = `/* fluid from ${from.cssText} at ${fromBP.cssText} to ${to.cssText} at ${toBP.cssText}${atContainer ? ' (container)' : ''} */`
+
+    // SC 1.4.4 check
+    let failingBP = null
+    if (checkSC144) {
+        const zoom1 = (vw: number) => clamp(from.number, intercept + slope*vw, to.number) // 2*zoom1(vw) is the AA requirement
+        const zoom5 = (vw: number) => clamp(5*from.number, 5*intercept + slope*vw, 5*to.number) // browser doesn't scale vw units when zooming, so this isn't 5*zoom1(vw)
+        
+        // Check the clamped points on the lines 2*z1(vw) and zoom5(vw) and fail if zoom5 < 2*zoom1
+        if (5*from.number < 2*zoom1(5*fromBP.number)) failingBP = new CSSLength(fromBP.number*5, fromBP.unit) // fails at 5*fromBP
+        else if (zoom5(toBP.number) < 2*to.number) failingBP = toBP
+    }
+    const comment = `/* ${failingBP ? 'not ': ''}fluid from ${from.cssText} at ${fromBP.cssText} to ${to.cssText} at ${toBP.cssText}${atContainer ? ' (container)' : ''}${checkSC144 ? '; ' + (failingBP ? 'fails WCAG SC 1.4.4 at i.e. ' + failingBP.cssText : 'passes WCAG SC 1.4.4') : ''} */`
+    // Return the from value if it fails SC 1.4.4, so that it could be potentially corrected with a fluid variant
+    if (failingBP) return `${from.cssText}${comment}` // only output the from value to not create an AA violation
 
     // Write it as slope - intercept if intercept is negative (to save a character)
     if (intercept < 0 && slope > 0)
@@ -67,7 +85,7 @@ export function generateExpr(
 }
 
 export const parseExpr = (val: string) => {
-    const [match, rawFrom, rawFromBP, rawTo, rawToBP, container, containerName] = val.match(/\/\* fluid from (.*?) at (.*?) to (.*?) at (.*?) (?:\((container)(?:: )?(.*?)\) )?\*\/$/) ?? []
+    const [match, rawFrom, rawFromBP, rawTo, rawToBP, container, containerName] = val.match(/\/\* (?:not )?fluid from (.*?) at (.*?) to (.*?) at (.*?)(?: \((container)(?:: )?(.*?)\))?(?:;.*?)? \*\/$/) ?? []
     if (!match) return
 
     return {
@@ -76,6 +94,7 @@ export const parseExpr = (val: string) => {
         to: CSSLength.parse(rawTo)!,
         toBP: CSSLength.parse(rawToBP)!,
         container: (containerName as string | undefined) ?? Boolean(container),
+        checkSC144: val.includes('WCAG SC 1.4.4')
     }
 }
 

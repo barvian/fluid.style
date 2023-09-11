@@ -14,6 +14,7 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
 * Supports **all core plugins** out of the box (i.e. font size, margin, padding, width, etc.)
 * Almost always generates **less CSS** than non-fluid classes (i.e. `pt-4 lg:pt-10`)
 * Full Intellisense
+* Ensures all fluid text meets [accessibility requirements](https://www.w3.org/WAI/WCAG21/Understanding/resize-text.html)
 * Comes with a `fluidize` method to add fluid versions of **any custom plugin**
 * **Flexible** enough to handle advanced use cases
 
@@ -117,7 +118,7 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
 ## Basic usage
 
 <Resizer client:load height="h-32">
-  <button class="bg-sky-500 hover:bg-sky-700 ~@lg/2xl:~px-4/8 ~@lg/2xl:~py-2/4 ~@lg/2xl:~text-sm/xl leading-[1.25] rounded-full font-semibold text-white">Fluid button</button>
+  <button class="bg-sky-500 hover:bg-sky-700 ~@lg/2xl:~px-4/8 ~@lg/2xl:~py-2/4 ~@lg/2xl:~text-sm/xl rounded-full font-semibold text-white">Fluid button</button>
 </Resizer>
 ```html mark=/(\~.*?)\s+/
 <button class="bg-sky-500 ~px-4/8 ~py-2/4 ~text-sm/xl ...">Whoa!</h1>
@@ -179,7 +180,7 @@ This includes:
 * Start point / end point
 
 This usually isn't an issue, especially if you extend the `defaultScreensInRems` object
-as mentioned in [installation instructions](#use-rem-for-screens), but it can be helpful
+as mentioned in the [installation instructions](#use-rem-for-screens), but it can be helpful
 to keep in mind when designing.
 
 <Tip.Bad>Trying to set `font-size` in `rem` when the screens are in `px`</Tip.Bad>
@@ -221,7 +222,7 @@ to keep in mind when designing.
 
 ### Negative values
 
-You can't use the dash prefix `-` to negate fluid utiltiies like you
+You can't use the dash prefix `-` to negate fluid utilities like you
 can with i.e. `-mt-3`, because Tailwind would only negate the start value.
 
 <Tip.Bad>Trying to use `-` to negate a fluid utility</Tip.Bad>

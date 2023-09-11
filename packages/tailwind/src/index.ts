@@ -3,7 +3,7 @@ type Plugin = ReturnType<typeof plugin>
 // @ts-expect-error untyped source file
 import { corePlugins } from 'tailwindcss/lib/corePlugins'
 import { CSSRuleObject, PluginAPI, PluginCreator } from 'tailwindcss/types/config'
-import { log, LogLevel, mapObject, CSSLength, type RawValue, generateExpr, addVariantWithModifier, parseExpr, unique } from './util'
+import { log, LogLevel, mapObject, CSSLength, type RawValue, generateExpr, addVariantWithModifier, parseExpr, unique, coalesce } from './util'
 import defaultTheme from 'tailwindcss/defaultTheme'
 import { Container } from 'postcss'
 import { mapObjectSkip } from 'map-obj'
@@ -63,20 +63,15 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
             // Line height. Make sure to use double equals to catch nulls and strings <-> numbers
             if (from[1]?.lineHeight == to[1]?.lineHeight) {
                 rules['line-height'] = from[1]?.lineHeight
-            } else if (!from[1]?.lineHeight || !to[1]?.lineHeight) {
-                log.warn('missing-values', [
-                    'Attempted to set fluid text with a missing line height'
-                ])
-                return null
             } else {
-                let parsedFromLineHeight = parseValue(from[1].lineHeight, context)
-                let parsedToLineHeight = parseValue(to[1].lineHeight, context)
+                let parsedFromLineHeight = parseValue(from[1]?.lineHeight, context)
+                let parsedToLineHeight = parseValue(to[1]?.lineHeight, context)
 
                 // If we get one length and one number, it's probably safe to
                 // coerce the number to a length (which handles the higher fontSizes in the default theme)
-                if (!parsedFromLineHeight && !isNaN(parseFloat(from[1].lineHeight)) && parsedToLineHeight) {
+                if (!parsedFromLineHeight && !isNaN(parseFloat(from[1]?.lineHeight)) && parsedToLineHeight) {
                     parsedFromLineHeight = new CSSLength(parsedFontSizes[0].number*parseFloat(from[1].lineHeight), parsedFontSizes[0].unit)
-                } else if (parsedFromLineHeight && !parsedToLineHeight && !isNaN(parseFloat(to[1].lineHeight))) {
+                } else if (parsedFromLineHeight && !parsedToLineHeight && !isNaN(parseFloat(to[1]?.lineHeight))) {
                     parsedToLineHeight = new CSSLength(parsedFontSizes[1].number*parseFloat(to[1].lineHeight), parsedFontSizes[1].unit)
                 }
                 if (!parsedFromLineHeight || !parsedToLineHeight) {
@@ -111,7 +106,8 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
     }, {
         values: fontSizeValues,
         modifiers: fontSizeModifiers,
-        supportsNegativeValues: false
+        supportsNegativeValues: false,
+        type: ['absolute-size', 'relative-size', 'length', 'percentage']
     })
 
     // Screen variants
@@ -231,7 +227,7 @@ function interceptUtilities(api: PluginAPI, {
             // conditions, but that's an optimization for another day
             const valid = transforms.length
                 // If we have transforms, make sure its a valid value after every one
-                ? transforms.every(t => parseValue(t!(v) ?? v, context))
+                ? transforms.every(t => parseValue(coalesce(t!(v), v), context))
                 // otherwise just make sure it's valid
                 : Boolean(parseValue(v, context))
             
@@ -249,8 +245,8 @@ function interceptUtilities(api: PluginAPI, {
                 if (_to === null && DEFAULT) _to = DEFAULT
 
                 const parsed = parseValues(
-                    transform?.[util]?.(_from) ?? transform?.DEFAULT?.(_from) ?? _from,
-                    transform?.[util]?.(_to) ?? transform?.DEFAULT?.(_to) ?? _to,
+                    coalesce((transform?.[util] ?? transform?.DEFAULT)?.(_from), _from),
+                    coalesce((transform?.[util] ?? transform?.DEFAULT)?.(_to), _to),
                     context,
                     LogLevel.WARN
                 )
@@ -358,7 +354,7 @@ function rewriteExprs(container: Container, context: Context, [_fromBP, _toBP]: 
                 throw new NoChangeBPError()
             }
 
-            decl.value = generateExpr(parsed.from, resolvedFromBP, parsed.to, resolvedToBP, { atContainer })
+            decl.value = generateExpr(parsed.from, resolvedFromBP, parsed.to, resolvedToBP, { atContainer, checkSC144: parsed.checkSC144 })
         })
     } catch (e) {
         if (e instanceof NoChangeBPError) {
