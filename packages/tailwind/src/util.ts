@@ -48,7 +48,7 @@ export const unique = (iter: Iterable<any>) => new Set(iter).size
 
 export function generateExpr(
     from: CSSLength, fromBP: CSSLength, to: CSSLength, toBP: CSSLength,
-    atContainer?: string | true
+    { atContainer, checkSC144 = false }: { atContainer?: string | true, checkSC144?: boolean } = {}
 ) {
     const unit = from.unit // you can technically get it from any of the values
     const p = Math.max(precision(from.number), precision(fromBP.number), precision(to.number), precision(toBP.number), 2)

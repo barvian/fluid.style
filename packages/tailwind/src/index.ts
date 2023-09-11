@@ -2,7 +2,7 @@ import plugin from 'tailwindcss/plugin'
 type Plugin = ReturnType<typeof plugin>
 // @ts-expect-error untyped source file
 import { corePlugins } from 'tailwindcss/lib/corePlugins'
-import { PluginAPI, PluginCreator } from 'tailwindcss/types/config'
+import { CSSRuleObject, PluginAPI, PluginCreator } from 'tailwindcss/types/config'
 import { log, LogLevel, mapObject, CSSLength, type RawValue, generateExpr, addVariantWithModifier, parseExpr, unique } from './util'
 import defaultTheme from 'tailwindcss/defaultTheme'
 import { Container } from 'postcss'
@@ -14,7 +14,7 @@ export type ThemeConfigFluid = Partial<{
 }>
 
 export const fluidCorePlugins = plugin((api: PluginAPI) => {
-    const { theme, corePlugins: corePluginEnabled, addVariant, matchVariant } = api
+    const { theme, corePlugins: corePluginEnabled, addVariant, matchVariant, matchUtilities } = api
     const context = getContext(theme)
     const { screens, containers } = context
 
@@ -22,15 +22,96 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
     const interceptedAPI = interceptUtilities(api, {
         addOriginal: false,
         transform: {
-            text(val) {
-                if (Array.isArray(val)) return val[0]
-            }
+            text() { return null } // skips the entire plugin, essentially
         }
     }, context)
     Object.entries(corePlugins).forEach(([name, _p]) => {
         if (!corePluginEnabled(name)) return
         const p = _p as PluginCreator
         p(interceptedAPI)
+    })
+
+    // Add new fluid text utility to handle potentially complex theme values
+    // ---
+
+    // The only thing we can really filter out is if the font size itself
+    // is in a different unit than the breakpoints
+    const fontSizeValues = mapObject(theme('fontSize') ?? {}, (k, v) => {
+        const [fontSize] = Array.isArray(v) ? v : [v]
+        return parseValue(fontSize, context) ? [k as string, v] : mapObjectSkip
+    })
+        
+    // See note about default modifiers in `interceptUtilities`
+    const { DEFAULT, ...fontSizeModifiers } = fontSizeValues
+    matchUtilities({
+        '~text'(from, { modifier: to }) {
+            if (to === null && DEFAULT) to = DEFAULT
+
+            // Normalize inputs
+            if (!Array.isArray(from)) from = [from]
+            else if (/^(string|number)$/.test(typeof from[1])) from[1] = { lineHeight: from[1]+'' }
+            if (!Array.isArray(to)) to = [to]
+            else if (/^(string|number)$/.test(typeof to[1])) to[1] = { lineHeight: to[1]+'' }
+
+            const rules: CSSRuleObject = {}
+
+            // Font size
+            const parsedFontSizes = parseValues(from[0], to[0], context, LogLevel.WARN)
+            if (!parsedFontSizes) return null
+            rules['font-size'] = generateExpr(parsedFontSizes[0], context.defaultFromScreen, parsedFontSizes[1], context.defaultToScreen, { checkSC144: true })
+
+            // Line height. Make sure to use double equals to catch nulls and strings <-> numbers
+            if (from[1]?.lineHeight == to[1]?.lineHeight) {
+                rules['line-height'] = from[1]?.lineHeight
+            } else if (!from[1]?.lineHeight || !to[1]?.lineHeight) {
+                log.warn('missing-values', [
+                    'Attempted to set fluid text with a missing line height'
+                ])
+                return null
+            } else {
+                let parsedFromLineHeight = parseValue(from[1].lineHeight, context)
+                let parsedToLineHeight = parseValue(to[1].lineHeight, context)
+
+                // If we get one length and one number, it's probably safe to
+                // coerce the number to a length (which handles the higher fontSizes in the default theme)
+                if (!parsedFromLineHeight && !isNaN(parseFloat(from[1].lineHeight)) && parsedToLineHeight) {
+                    parsedFromLineHeight = new CSSLength(parsedFontSizes[0].number*parseFloat(from[1].lineHeight), parsedFontSizes[0].unit)
+                } else if (parsedFromLineHeight && !parsedToLineHeight && !isNaN(parseFloat(to[1].lineHeight))) {
+                    parsedToLineHeight = new CSSLength(parsedFontSizes[1].number*parseFloat(to[1].lineHeight), parsedFontSizes[1].unit)
+                }
+                if (!parsedFromLineHeight || !parsedToLineHeight) {
+                    log.warn('missing-values', [
+                        'Attempted to set fluid text with incompatible line heights'
+                    ])
+                    return null
+                }
+
+                rules['line-height'] = generateExpr(parsedFromLineHeight, context.defaultFromScreen, parsedToLineHeight, context.defaultToScreen)
+            }
+
+            // Letter spacing. Make sure to use double equals to catch nulls and strings <-> numbers
+            if (from[1]?.letterSpacing == to[1]?.letterSpacing) {
+                rules['letter-spacing'] = from[1]?.letterSpacing
+            } else {
+                const parsedLetterSpacing = parseValues(from[1]?.letterSpacing, to[1]?.letterSpacing, context, LogLevel.WARN)
+                if (!parsedLetterSpacing) return null
+                rules['letter-spacing'] = generateExpr(parsedLetterSpacing[0], context.defaultFromScreen, parsedLetterSpacing[1], context.defaultToScreen)
+            }
+
+            // Font weight. Make sure to use double equals to catch nulls and strings <-> numbers
+            // Also, conveniently: NaN !== NaN
+            if (from[1]?.fontWeight == to[1]?.fontWeight || parseFloat(from[1]?.fontWeight) === parseFloat(to[1]?.fontWeight)) {
+                rules['font-weight'] = from[1]?.fontWeight
+            } else {
+                return null
+            }
+
+            return rules
+        }
+    }, {
+        values: fontSizeValues,
+        modifiers: fontSizeModifiers,
+        supportsNegativeValues: false
     })
 
     // Screen variants
@@ -277,7 +358,7 @@ function rewriteExprs(container: Container, context: Context, [_fromBP, _toBP]: 
                 throw new NoChangeBPError()
             }
 
-            decl.value = generateExpr(parsed.from, resolvedFromBP, parsed.to, resolvedToBP, atContainer)
+            decl.value = generateExpr(parsed.from, resolvedFromBP, parsed.to, resolvedToBP, { atContainer })
         })
     } catch (e) {
         if (e instanceof NoChangeBPError) {
