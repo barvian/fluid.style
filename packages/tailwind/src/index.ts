@@ -172,6 +172,11 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
             )
         })
 
+        // Add `~@container/[arbitrary]?` variants
+        addVariantWithModifier(api, `~@${c1Key}`, ({ container, modifier }) =>
+            rewriteExprs(container, context, [c1, modifier], true)
+        )
+
         // Add `~@/container` variants
         // @ts-expect-error undocumented API
         addVariant(`~@/${c1Key}`, ({ container }) => 
@@ -182,9 +187,12 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
     // Add ~@[arbitrary]|container/[arbitrary]|container variant
     // @ts-expect-error undocumented API
     matchVariant('~@', (value, { modifier, container }: { modifier: string | null, container: Container }) => (
-        rewriteExprs(container, context, [value, modifier])
+        rewriteExprs(container, context, [value, modifier], true)
     ), {
-        values: containers
+        values: {
+            ...containers,
+            DEFAULT: null // so they can omit it and use fluid.defaultContainers; see log.warn above
+        }
     })
 })
 
@@ -331,15 +339,16 @@ function rewriteExprs(container: Container, context: Context, [_fromBP, _toBP]: 
             ? parseValue(_fromBP, context, LogLevel.RISK)
             : _fromBP
         
-        const toBP = (typeof _toBP === 'string')
+        let toBP = _toBP
+        if (typeof toBP === 'string') {
             // Check if it's [arbitrary] (i.e. from a modifier)
-            ? /^\[(.*?)\]$/.test(_toBP)
-                // Unwrap and parse if it's arbitrary
-                ? parseValue(_toBP.match(/^\[(.*?)\]$/)?.[1], context, LogLevel.RISK)
-                // Otherwise, try to look it up from the theme
-                : context[atContainer ? 'containers' : 'screens']?.[_toBP]
-            : _toBP
-
+            if (/^\[(.*?)\]$/.test(toBP)) {
+                toBP = parseValue(toBP.match(/^\[(.*?)\]$/)?.[1], context, LogLevel.RISK)
+            } else {
+                toBP = context[atContainer ? 'containers' : 'screens']?.[toBP]
+                if (!toBP) return [] // fail if we couldn't find in theme
+            }
+        }
         
         const defaultFromBP = atContainer ? context.defaultFromContainer! : context.defaultFromScreen
         const defaultToBP = atContainer ? context.defaultToContainer! : context.defaultToScreen
