@@ -4,7 +4,7 @@
 
 	let content = sessionable(`
 		An
-		<span contenteditable="false" class="text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 to-cyan-500">accessible</span>
+		<a href="https://www.smashingmagazine.com/2023/11/addressing-accessibility-concerns-fluid-type/" contenteditable="false" class="text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 to-cyan-500">accessible</a>
 		fluid type generator
 	`, 'calculator-text')
 
