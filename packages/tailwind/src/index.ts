@@ -3,7 +3,7 @@ type Plugin = ReturnType<typeof plugin>
 // @ts-expect-error untyped source file
 import { corePlugins } from 'tailwindcss/lib/corePlugins'
 import { CSSRuleObject, PluginAPI, PluginCreator } from 'tailwindcss/types/config'
-import { log, LogLevel, mapObject, CSSLength, type RawValue, generateExpr, addVariantWithModifier, parseExpr, unique, coalesce } from './util'
+import { noop, log, LogLevel, mapObject, CSSLength, type RawValue, generateExpr, addVariantWithModifier, parseExpr, unique, coalesce } from './util'
 import defaultTheme from 'tailwindcss/defaultTheme'
 import { Container } from 'postcss'
 import { mapObjectSkip } from 'map-obj'
@@ -213,7 +213,7 @@ function interceptUtilities(api: PluginAPI, {
 }: InterceptOptions = {}, context: Context): PluginAPI {
     // Make any add* or match* function (i.e. addComponents) a noop if we're not including the original
     const rest = addOriginal ? api : mapObject(api, (a, fn) =>
-        a.startsWith('add') || a.startsWith('match') ? [a, ()=>{}] : [a, fn]
+        [a, a.startsWith('add') || a.startsWith('match') ? noop : fn]
     )
 
     const matchUtilities: PluginAPI['matchUtilities'] = (utilities, options) => {

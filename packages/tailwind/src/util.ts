@@ -12,6 +12,8 @@ export enum LogLevel {
     RISK = 'risk'
 }
 
+export const noop = () => {}
+
 export type RawValue = string | null | undefined
 
 export class CSSLength {
