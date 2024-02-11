@@ -25,9 +25,8 @@ export default {
 	},
 	theme: {
 		screens: {
+			xs: '30rem',
 			...screens,
-			// DEFAULT: '10rem',
-			xs: '30rem'
 		},
 		extend: {
 			borderColor: {

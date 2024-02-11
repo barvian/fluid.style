@@ -13,7 +13,7 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
 {/* * Uses your existing Tailwind theme */}
 * Supports **all core plugins** out of the box (i.e. font size, margin, padding, width, etc.)
 * Almost always generates **less CSS** than non-fluid classes (i.e. `pt-4 lg:pt-10`)
-* Full Intellisense
+* Full **Intellisense** support
 * Ensures all fluid text meets [accessibility requirements](https://www.w3.org/WAI/WCAG21/Understanding/resize-text.html)
 * Comes with a `fluidize` method to add fluid versions of **any custom plugin**
 * **Flexible** enough to handle advanced use cases
@@ -25,11 +25,11 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
     <>
       **Install the package**
 
-      Install `@fluidstyle/tailwindcss-plugin` via npm.
+      Install `@fluidstyle/tailwindcss` via npm.
     </>
     <Fragment slot="code">
     ```sh
-    npm install -D @fluidstyle/tailwindcss-plugin
+    npm install -D @fluidstyle/tailwindcss
     ```
     </Fragment>
   </Steps.Item>
@@ -41,12 +41,12 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
     </>
     <Fragment slot="code">
       ```ts title="tailwind.config.ts" ins={1, 6} ins=/content\:(\s*\{)/ ins=/\](,)/ ins=/files\:\s*/ ins=/(\}),/
-      import { buildFluidExtract } from '@fluidstyle/tailwindcss-plugin'
+      import { fluidExtractor } from '@fluidstyle/tailwindcss'
 
       export default {
         content: {
           files: [/* ... */],
-          extract: buildFluidExtract()
+          extract: fluidExtractor()
         },
         theme: {
           // ...
@@ -63,12 +63,12 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
     </>
     <Fragment slot="code">
       ```ts title="tailwind.config.ts" ins=/, fluidCorePlugins/ ins={12}
-      import { buildFluidExtract, fluidCorePlugins } from '@fluidstyle/tailwindcss-plugin'
+      import { fluidExtractor, fluidCorePlugins } from '@fluidstyle/tailwindcss'
 
       export default {
         content: {
           files: [/* ... */],
-          extract: buildFluidExtract()
+          extract: fluidExtractor()
         },
         theme: {
           // ...
@@ -90,20 +90,18 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
       <Tip.Info>This [may be unnecessary](https://github.com/tailwindlabs/tailwindcss/discussions/8378#discussioncomment-2779675) in future versions of Tailwind</Tip.Info>
     </>
     <Fragment slot="code">
-      ```ts title="tailwind.config.ts" ins=/, defaultScreensInRems/ ins={11} mark=/\/\/.*$/
-      import { buildFluidExtract, fluidCorePlugins, defaultScreensInRems } from '@fluidstyle/tailwindcss-plugin'
+      ```ts title="tailwind.config.ts" ins=/, defaultThemeScreensInRems/ ins={11} mark=/\/\/.*$/
+      import { fluidExtractor, fluidCorePlugins, defaultThemeScreensInRems } from '@fluidstyle/tailwindcss'
 
       export default {
         content: {
           files: [/* ... */],
-          extract: buildFluidExtract()
+          extract: fluidExtractor()
         },
         theme: {
-          extend: {
-            screens: {
-              ...defaultScreensInRems,
-              xs: '30rem' // make sure custom screens use rem units
-            }
+          screens: {
+            xs: '30rem', // make sure custom screens use rem units
+            ...defaultThemeScreensInRems
           }
         },
         plugins: [
@@ -179,8 +177,8 @@ This includes:
 * Start value / end value
 * Start point / end point
 
-This usually isn't an issue, especially if you extend the `defaultScreensInRems` object
-as mentioned in the [installation instructions](#use-rem-for-screens), but it can be helpful
+This usually isn't an issue, especially if you extend the `defaultThemeScreensInRems` object
+as mentioned in the [installation instructions](#installation) but it can be helpful
 to keep in mind when designing.
 
 <Tip.Bad>Trying to set `font-size` in `rem` when the screens are in `px`</Tip.Bad>
@@ -212,7 +210,7 @@ to keep in mind when designing.
 
 <Tip.Bad>Using expressions like `calc()`</Tip.Bad>
 ```html
-<h1 class="~text-base/[calc(1.5rem_-_2px)]">
+<h1 class="~text-base/[calc(1.5rem-2px)]">
 ```
 
 <Tip.Bad>Trying to interpolate between non-lengths like colors</Tip.Bad>
@@ -228,11 +226,6 @@ can with i.e. `-mt-3`, because Tailwind would only negate the start value.
 <Tip.Bad>Trying to use `-` to negate a fluid utility</Tip.Bad>
 ```html
 <div class="-~mt-3/5">
-```
-
-<Tip.Good>Using negated theme values</Tip.Good>
-```html
-<div class="~mt-[-theme(margin.3)]/[-theme(margin.5)]">
 ```
 
 ### Named containers
@@ -254,36 +247,36 @@ when using fluid CSS expressions, but
     ### Customizing default screens
 
     The default start and end screens can be set with a tuple `[start, end]`, where each
-    value is either a key to your `theme.screens` object or a CSS length.
-    Either value can be omitted, in which case the plugin will use the smallest and largest
+    value is a simple screen width.
+    Either value can be omitted, in which case the plugin will use your smallest and largest
     screen, respectively.
   </>
   ```ts title="tailwind.config.ts" mark={6}
-  import { ..., type ThemeConfigFluid } from '@fluidstyle/tailwindcss-plugin'
+  import { ..., type FluidConfig } from '@fluidstyle/tailwindcss'
 
   export default {
     theme: {
       fluid: {
-        defaultScreens: ['sm', '30rem']
-      } satisfies ThemeConfigFluid
+        defaultScreens: ['20rem', '64rem']
+      } satisfies FluidConfig
     }
   }
   ```
   <>
     ### Customizing default containers
 
-    The default [containers](#containers) can be set in the same way as screens.
-    Either value can be omitted, in which case the plugin will use the smallest and
+    The default containers can be set in the same way as screens.
+    Either value can be omitted, in which case the plugin will use your smallest and
     largest container, respectively.
   </>
   ```ts title="tailwind.config.ts" mark={6}
-  import { ..., type ThemeConfigFluid } from '@fluidstyle/tailwindcss-plugin'
+  import { ..., type FluidConfig } from '@fluidstyle/tailwindcss'
 
   export default {
     theme: {
       fluid: {
-        defaultContainers: [, '6xl']
-      } satisfies ThemeConfigFluid
+        defaultContainers: [, '30rem']
+      } satisfies FluidConfig
     }
   }
   ```
@@ -297,7 +290,7 @@ When adding custom plugins to your `tailwind.config.js`, you can run them throug
 the `fluidize` function to automatically add fluid versions of all their utilities and components:
 
 ```ts title="tailwind.config.ts" ins=/, (fluidize)/ ins="fluidize(" ins=")"
-import { ..., fluidize } from '@fluidstyle/tailwindcss-plugin'
+import { ..., fluidize } from '@fluidstyle/tailwindcss'
 import myFavoritePlugin from '...'
 
 export default {
@@ -342,7 +335,6 @@ is our `md` screen
 1. When we get to our `lg` screen, we interpolate between the opposite `4xl` and `base`, starting
 when the viewport is our `lg` screen
 
-(Admittedly, `lg:~lg:` is pretty repetitive, so it may try to be simplified in the future.)
 {/* 
 ```html del="lg:~lg:" ins="~:lg:" del="min-[40rem]:~min-[40rem]/xl:" ins="~/xl:min-[40rem]:" del="@lg:~@lg:" ins="~:@lg:"
 <!-- These are equivalent: -->
