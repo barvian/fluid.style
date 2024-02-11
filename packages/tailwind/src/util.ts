@@ -50,7 +50,7 @@ export const clamp = (min: number, n: number, max: number) => Math.min(Math.max(
 
 export const unique = (iter: Iterable<any>) => new Set(iter).size
 
-// Like nullish coalesce except it's for undefined:
+// Like nullish coalesce except it's just for undefined:
 export const coalesce = <T, U>(first: T, second: U) => first === undefined ? second : first
 
 export function generateExpr(
