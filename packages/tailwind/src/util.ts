@@ -1,5 +1,3 @@
-export * from 'filter-obj'
-export { default as mapObject } from 'map-obj'
 import { Container } from 'postcss'
 import { PluginAPI } from 'tailwindcss/types/config'
 // @ts-expect-error untyped source file

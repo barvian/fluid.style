@@ -2,10 +2,11 @@ import plugin from 'tailwindcss/plugin'
 type Plugin = ReturnType<typeof plugin>
 import { corePlugins } from 'tailwindcss-priv/lib/corePlugins'
 import { CSSRuleObject, PluginAPI, PluginCreator } from 'tailwindcss/types/config'
-import { noop, log, LogLevel, mapObject, CSSLength, type RawValue, generateExpr, addVariantWithModifier, parseExpr, unique, coalesce, tuple } from './util'
+import { noop, log, LogLevel, CSSLength, type RawValue, generateExpr, addVariantWithModifier, parseExpr, unique, coalesce, tuple } from './util'
 import defaultTheme from 'tailwindcss/defaultTheme'
 import { Container } from 'postcss'
-import { mapObjectSkip } from 'map-obj'
+import mapObject, { mapObjectSkip } from 'map-obj'
+import { includeKeys } from 'filter-obj'
 
 type Breakpoints = [string] | [undefined, string] | [string, string]
 export type FluidConfig = Partial<{
@@ -21,9 +22,8 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
     // Add fluid versions for enabled core plugins
     const interceptedAPI = interceptUtilities(api, {
         addOriginal: false,
-        transform: {
-            text() { return null } // skips the entire plugin, essentially
-        }
+        // Filter out fontSize plugin
+        filter: (utils, options) => !utils.includes('text') || !options?.type?.includes('length')
     }, context)
     Object.entries(corePlugins).forEach(([name, _p]) => {
         if (!corePluginEnabled(name)) return
@@ -60,7 +60,7 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
             if (!parsedFontSizes) return null
             rules['font-size'] = generateExpr(parsedFontSizes[0], context.defaultFromScreen, parsedFontSizes[1], context.defaultToScreen, { checkSC144: true })
 
-            // Line height. Make sure to use == not !== to catch nullish and strings <-> numbers
+            // Line height. Make sure to use double equals to catch nulls and strings <-> numbers
             if (from[1]?.lineHeight == to[1]?.lineHeight) {
                 rules['line-height'] = from[1]?.lineHeight
             } else {
@@ -183,7 +183,7 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
 
 
 type MatchUtilOrComp = PluginAPI['matchUtilities'] | PluginAPI['matchComponents']
-type FilterFn = (utilsOrComps: Parameters<MatchUtilOrComp>[0], options: Parameters<MatchUtilOrComp>[1]) => boolean
+type FilterFn = (utilityOrComponentNames: string[], options: Parameters<MatchUtilOrComp>[1]) => boolean | null | undefined
 
 /**
  * Return a modified PluginAPI that intercepts calls to matchUtilities and matchComponents
@@ -191,63 +191,49 @@ type FilterFn = (utilsOrComps: Parameters<MatchUtilOrComp>[0], options: Paramete
  */
 function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
-    transform
+    filter
 }: Partial<{ addOriginal: boolean, filter: FilterFn }> = {}, context: Context): PluginAPI {
     const matchUtilities: MatchUtilOrComp = (utilities, options) => {
         // Add original
         if (addOriginal) api.matchUtilities(utilities, options)
         // Skip ones with types that don't include length or any
         if (options?.type && !options.type.includes('length') && !options.type.includes('any')) return
+        // Skip filtered out ones
+        if (filter && !filter(Object.keys(utilities), options)) return
         
         // Add fluid version
-        // Start by filtering the values as much as possible
-        const values = Object.entries(options?.values ?? {}).reduce((values, [k, v]) => {
-            // Get a list of unique matching transforms
-            const transforms = Object.keys(utilities)
-                .map(util => transform?.[util])
-                .filter(t => t)
-            if (transform?.DEFAULT) transforms.push(transform.DEFAULT)
-            
-            // These pre-transformed values could probably get saved under certain
-            // conditions, but that's an optimization for another day
-            const valid = transforms.length
-                // If we have transforms, make sure its a valid value after every one
-                ? transforms.every(t => parseValue(coalesce(t!(v), v), context))
-                // otherwise just make sure it's valid
-                : Boolean(parseValue(v, context))
-            
-            // If it passes, add it to our filtered set of values
-            if (valid) values[k] = v
-            return values
-        }, {} as Record<string, any>)
+        // Start by filtering the values to only valid lengths
+        const values = includeKeys(options?.values ?? {}, (_, v) => Boolean(parseValue(v, context)))
 
         // TW doesn't use the DEFAULT convention for modifiers so we'll extract it:
         const { DEFAULT, ...modifiers } = values
         
-        api.matchUtilities(mapObject(utilities, (util, origFn) =>
-            [`~${util}`, function(_from, { modifier: _to }) {
-                // See note about default modifiers above
-                if (_to === null && DEFAULT) _to = DEFAULT
+        Object.entries(utilities).forEach(([util, origFn]) => {
+            api.matchUtilities({
+                [`~${util}`](_from, { modifier: _to }) {
+                    // See note about default modifiers above
+                    if (_to === null && DEFAULT) _to = DEFAULT
 
-                const parsed = parseValues(
-                    coalesce((transform?.[util] ?? transform?.DEFAULT)?.(_from), _from),
-                    coalesce((transform?.[util] ?? transform?.DEFAULT)?.(_to), _to),
-                    context,
-                    LogLevel.WARN
-                )
-                if (!parsed) return null
-                const [from, to] = parsed
-                
-                return origFn(
-                    generateExpr(from, context.defaultFromScreen, to, context.defaultToScreen),
-                    { modifier: null } // don't pass along the modifier
-                )
-            } satisfies typeof origFn]
-        ), {
-            ...options,
-            values,
-            supportsNegativeValues: false, // b/c TW only negates the value, not the modifier
-            modifiers
+                    const parsed = parseValues(
+                        _from,
+                        _to,
+                        context,
+                        LogLevel.WARN
+                    )
+                    if (!parsed) return null
+                    const [from, to] = parsed
+                    
+                    return origFn(
+                        generateExpr(from, context.defaultFromScreen, to, context.defaultToScreen),
+                        { modifier: null } // don't pass along the modifier
+                    )
+                }
+            }, {
+                ...options,
+                values,
+                supportsNegativeValues: false, // b/c TW only negates the value, not the modifier
+                modifiers
+            })
         })
     }
     

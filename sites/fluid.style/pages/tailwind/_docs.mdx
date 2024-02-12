@@ -22,11 +22,9 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
 
 <Steps.Root>
   <Steps.Item>
-    <>
-      **Install the package**
+    **Install the package**
 
-      Install `@fluidstyle/tailwindcss` via npm.
-    </>
+    Install `@fluidstyle/tailwindcss` via npm.
     <Fragment slot="code">
     ```sh
     npm install -D @fluidstyle/tailwindcss
@@ -34,11 +32,9 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
     </Fragment>
   </Steps.Item>
   <Steps.Item>
-    <>
-      **Add the [extractor](https://tailwindcss.com/docs/content-configuration#customizing-extraction-logic)**
+    **Add the [extractor](https://tailwindcss.com/docs/content-configuration#customizing-extraction-logic)**
 
-      This lets you use the new `~` prefix in your Tailwind classes.
-    </>
+    This lets you use the new `~` prefix in your Tailwind classes.
     <Fragment slot="code">
       ```ts title="tailwind.config.ts" ins={1, 6} ins=/content\:(\s*\{)/ ins=/\](,)/ ins=/files\:\s*/ ins=/(\}),/
       import { fluidExtractor } from '@fluidstyle/tailwindcss'
@@ -56,11 +52,9 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
     </Fragment>
   </Steps.Item>
   <Steps.Item>
-    <>
-      **Add the fluid core plugins**
+    **Add the fluid core plugins**
 
-      This adds fluid versions of every enabled [core plugin](https://tailwindcss.com/docs/configuration#core-plugins).
-    </>
+    This adds fluid versions of every enabled [core plugin](https://tailwindcss.com/docs/configuration#core-plugins).
     <Fragment slot="code">
       ```ts title="tailwind.config.ts" ins=/, fluidCorePlugins/ ins={12}
       import { fluidExtractor, fluidCorePlugins } from '@fluidstyle/tailwindcss'
@@ -81,14 +75,12 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
     </Fragment>
   </Steps.Item>
   <Steps.Item>
-    <>
-      **Use `rem` for `screens` and `fontSize`**
+    **Use `rem` for `screens` and `fontSize`**
 
-      Use `rem` versions of Tailwind's default screens and font sizes/line heights
-      to ensure greater compability with core plugins. Make sure any custom screens or font sizes
-      you add also use `rem` units.
-      <Tip.Info>This [may be unnecessary](https://github.com/tailwindlabs/tailwindcss/discussions/8378#discussioncomment-2779675) in future versions of Tailwind</Tip.Info>
-    </>
+    Use `rem` versions of Tailwind's default screens and font sizes/line heights
+    to ensure greater compability with core plugins. Make sure any custom screens or font sizes
+    you add also use `rem` units.
+    <Tip.Info>This [may be unnecessary](https://github.com/tailwindlabs/tailwindcss/discussions/8378#discussioncomment-2779675) in future versions of Tailwind</Tip.Info>
     <Fragment slot="code">
       ```ts title="tailwind.config.ts" ins=/, defaultThemeScreensInRems, defaultThemeFontSizeInRems/ ins={10,15}
       import { fluidExtractor, fluidCorePlugins, defaultThemeScreensInRems, defaultThemeFontSizeInRems } from '@fluidstyle/tailwindcss'
