@@ -96,7 +96,7 @@ src: url('./fonts/Inter-roman-latin.var.woff2') format('woff2');
     }
 
     /* Fix vertical scrolling */
-    .ec .frame {
+    /* .ec .frame {
         display: flex !important;
         flex-flow: column !important;
         align-items: stretch !important;
@@ -107,5 +107,5 @@ src: url('./fonts/Inter-roman-latin.var.woff2') format('woff2');
         display: block !important;
         flex: 1 !important;
         overflow: auto !important;
-    }
+    } */
 }

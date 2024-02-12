@@ -77,12 +77,12 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
   <Steps.Item>
     **Use `rem` for `screens` and `fontSize`**
 
-    Use `rem` versions of Tailwind's default screens and font sizes/line heights
-    to ensure greater compability with core plugins. Make sure any custom screens or font sizes
-    you add also use `rem` units.
+    Make sure your `theme.screens` and `theme.fontSize` (including line heights) use `rem`
+    units. If you're using Tailwind's default breakpoints or font sizes, the plugin exports
+    rem versions for your convenience.
     <Tip.Info>This [may be unnecessary](https://github.com/tailwindlabs/tailwindcss/discussions/8378#discussioncomment-2779675) in future versions of Tailwind</Tip.Info>
     <Fragment slot="code">
-      ```ts title="tailwind.config.ts" ins=/, defaultThemeScreensInRems, defaultThemeFontSizeInRems/ ins={10,15}
+      ```ts title="tailwind.config.ts" mark=/, defaultThemeScreensInRems, defaultThemeFontSizeInRems/ mark={10,11,14,15}
       import { fluidExtractor, fluidCorePlugins, defaultThemeScreensInRems, defaultThemeFontSizeInRems } from '@fluidstyle/tailwindcss'
 
       export default {
@@ -92,12 +92,12 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
         },
         theme: {
           fontSize: {
-            ...defaultThemeFontSizeInRems,
+            ...defaultThemeFontSizeInRems, // if you're using Tailwind's default font sizes
             '10xl': ['10rem', '10rem'] // make sure custom font sizes/line heights use rem units
           },
           screens: {
             xs: '30rem', // make sure custom screens use rem units
-            ...defaultThemeScreensInRems
+            ...defaultThemeScreensInRems // if you're using Tailwind's default screens
           }
         },
         plugins: [
