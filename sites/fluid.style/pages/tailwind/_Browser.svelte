@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resize } from "@lib/actions"
+	import { resize } from "/lib/actions"
 	import { onMount } from "svelte"
 	import { cubicOut } from "svelte/easing"
 	import { tweened } from "svelte/motion"

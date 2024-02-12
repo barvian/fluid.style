@@ -9,13 +9,19 @@
     onMount(() => {
         const io = new IntersectionObserver((entries) => {
             entries.forEach(e => {
-                const slug = e.target.firstElementChild!.firstElementChild!.id // this only works because the markup is guaranteed by the plugins
+                const slug = (e.target as HTMLElement).dataset.slug!
                 isActive[slug] = e.isIntersecting
             })
         }, {
             rootMargin: '-40% 0% -60%' // a little sliver at the middle of the viewport
         })
-        headings.forEach((heading) => io.observe(document.getElementById(heading.slug)!.parentElement!.parentElement!))
+        headings.forEach((heading) => {
+            const section = document.getElementById(heading.slug)!.closest('section')!
+            section.dataset.slug = heading.slug
+            io.observe(section)
+        })
+
+        return io.disconnect
     })
 </script>
 

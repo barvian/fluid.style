@@ -1,16 +1,14 @@
 ---
-layout: ../../layouts/Docs.astro
+layout: ./_Layout.astro
+title: Fluid Tailwind CSS Plugin
 ---
 import Split from './_Split.svelte'
-import * as Steps from '@components/Steps'
-import * as Tip from '@components/Tip'
-import Resizer from '@components/Resizer.svelte'
-import AnnotatedCode from '@components/AnnotatedCode.svelte'
+import * as Steps from '/components/Steps'
+import * as Tip from '/components/Tip'
+import Resizer from '/components/Resizer.svelte'
 
 ## Features
 
-{/* * Extremely **terse** in most use cases */}
-{/* * Uses your existing Tailwind theme */}
 * Supports **all core plugins** out of the box (i.e. font size, margin, padding, width, etc.)
 * Almost always generates **less CSS** than non-fluid classes (i.e. `pt-4 lg:pt-10`)
 * Full **Intellisense** support
@@ -34,9 +32,9 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
   <Steps.Item>
     **Add the [extractor](https://tailwindcss.com/docs/content-configuration#customizing-extraction-logic)**
 
-    This lets you use the new `~` prefix in your Tailwind classes.
+    The custom extractor lets you use the new `~` prefix in your Tailwind classes.
     <Fragment slot="code">
-      ```ts title="tailwind.config.ts" ins={1, 6} ins=/content\:(\s*\{)/ ins=/\](,)/ ins=/files\:\s*/ ins=/(\}),/
+      ```ts title="tailwind.config.ts" ins={1, 6}
       import { fluidExtractor } from '@fluidstyle/tailwindcss'
 
       export default {
@@ -44,9 +42,7 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
           files: [/* ... */],
           extract: fluidExtractor()
         },
-        theme: {
-          // ...
-        }
+        // ...
       }
       ```
     </Fragment>
@@ -54,19 +50,13 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
   <Steps.Item>
     **Add the fluid core plugins**
 
-    This adds fluid versions of every enabled [core plugin](https://tailwindcss.com/docs/configuration#core-plugins).
+    Add fluid versions of every enabled [core plugin](https://tailwindcss.com/docs/configuration#core-plugins).
     <Fragment slot="code">
-      ```ts title="tailwind.config.ts" ins=/, fluidCorePlugins/ ins={12}
+      ```ts title="tailwind.config.ts" ins=/, fluidCorePlugins/ ins={6}
       import { fluidExtractor, fluidCorePlugins } from '@fluidstyle/tailwindcss'
 
       export default {
-        content: {
-          files: [/* ... */],
-          extract: fluidExtractor()
-        },
-        theme: {
-          // ...
-        },
+        // ...
         plugins: [
           fluidCorePlugins
         ]
@@ -75,34 +65,25 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
     </Fragment>
   </Steps.Item>
   <Steps.Item>
-    **Use `rem` for `screens` and `fontSize`**
+    **(Optional) Use `rem` screens and font sizes**
 
-    Make sure your `theme.screens` and `theme.fontSize` (including line heights) use `rem`
-    units. If you're using Tailwind's default breakpoints or font sizes, the plugin exports
-    rem versions for your convenience.
-    <Tip.Info>This [may be unnecessary](https://github.com/tailwindlabs/tailwindcss/discussions/8378#discussioncomment-2779675) in future versions of Tailwind</Tip.Info>
+    If you're extending Tailwind's default `fontSize` and `screens`, you can use the included `rem` versions of them to ensure greater compatibility with core plugins.
+    <Tip.Info>This may be unnecessary in [future versions of Tailwind](https://github.com/tailwindlabs/tailwindcss/discussions/8378#discussioncomment-2779675)</Tip.Info>
     <Fragment slot="code">
-      ```ts title="tailwind.config.ts" mark=/, defaultThemeScreensInRems, defaultThemeFontSizeInRems/ mark={10,11,14,15}
+      ```ts title="tailwind.config.ts" ins={6,7} ins=/, defaultThemeScreensInRems, defaultThemeFontSizeInRems/
       import { fluidExtractor, fluidCorePlugins, defaultThemeScreensInRems, defaultThemeFontSizeInRems } from '@fluidstyle/tailwindcss'
 
       export default {
-        content: {
-          files: [/* ... */],
-          extract: fluidExtractor()
-        },
+        // ...
         theme: {
-          fontSize: {
-            ...defaultThemeFontSizeInRems, // if you're using Tailwind's default font sizes
-            '10xl': ['10rem', '10rem'] // make sure custom font sizes/line heights use rem units
-          },
-          screens: {
-            xs: '30rem', // make sure custom screens use rem units
-            ...defaultThemeScreensInRems // if you're using Tailwind's default screens
+          fontSize: defaultThemeFontSizeInRems,
+          screens: defaultThemeScreensInRems
+          extend: {
+            fontSize: {
+              // ...
+            }
           }
-        },
-        plugins: [
-          fluidCorePlugins
-        ]
+        }
       }
       ```
     </Fragment>
@@ -117,7 +98,6 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
 ```html mark=/(\~.*?)\s+/
 <button class="bg-sky-500 ~px-4/8 ~py-2/4 ~text-sm/xl ...">Whoa!</h1>
 ```
-<Tip.Info class="xl:hidden">It helps to view these examples on a wider screen, to see the full effect</Tip.Info>
 
 Here's a quick overview:
 * The `~` prefix makes a utility fluid
@@ -168,7 +148,9 @@ Just like the `~` variant, both start and end containers are optional and will u
 
 ## Limitations
 
-Due to CSS restrictions, fluid expressions can only be computed if **all involved lengths have the same units**.
+### All lengths must have the same unit
+
+Due to CSS restrictions, fluid expressions can only be computed if **all involved lengths have the same unit**.
 This includes:
 * Start value / end value
 * Start point / end point
@@ -238,45 +220,42 @@ when using fluid CSS expressions, but
 
 ## Configuration
 
-<AnnotatedCode>
-  <>
-    ### Customizing default screens
+### Customizing default screens
 
-    The default start and end screens can be set with a tuple `[start, end]`, where each
-    value is a simple screen width.
-    Either value can be omitted, in which case the plugin will use your smallest and largest
-    screen, respectively.
-  </>
-  ```ts title="tailwind.config.ts" mark={6}
-  import { ..., type FluidConfig } from '@fluidstyle/tailwindcss'
+The default start and end screens can be set with a tuple `[start, end]`, where each
+value is a simple screen width.
+Either value can be omitted, in which case the plugin will use your smallest and largest
+screen, respectively.
 
-  export default {
-    theme: {
-      fluid: {
-        defaultScreens: ['20rem', '64rem']
-      } satisfies FluidConfig
-    }
+```ts title="tailwind.config.ts" mark={6}
+import { ..., type FluidConfig } from '@fluidstyle/tailwindcss'
+
+export default {
+  theme: {
+    fluid: {
+      defaultScreens: ['20rem', '64rem']
+    } satisfies FluidConfig
   }
-  ```
-  <>
-    ### Customizing default containers
+}
+```
 
-    The default containers can be set in the same way as screens.
-    Either value can be omitted, in which case the plugin will use your smallest and
-    largest container, respectively.
-  </>
-  ```ts title="tailwind.config.ts" mark={6}
-  import { ..., type FluidConfig } from '@fluidstyle/tailwindcss'
+### Customizing default containers
 
-  export default {
-    theme: {
-      fluid: {
-        defaultContainers: [, '30rem']
-      } satisfies FluidConfig
-    }
+The default containers can be set in the same way as screens.
+Either value can be omitted, in which case the plugin will use your smallest and
+largest container, respectively.
+
+```ts title="tailwind.config.ts" mark={6}
+import { ..., type FluidConfig } from '@fluidstyle/tailwindcss'
+
+export default {
+  theme: {
+    fluid: {
+      defaultContainers: [, '30rem']
+    } satisfies FluidConfig
   }
-  ```
-</AnnotatedCode>
+}
+```
 
 ## Advanced
 
@@ -330,17 +309,3 @@ Here's how this works:
 is our `md` screen
 1. When we get to our `lg` screen, we interpolate between the opposite `4xl` and `base`, starting
 when the viewport is our `lg` screen
-
-{/* 
-```html del="lg:~lg:" ins="~:lg:" del="min-[40rem]:~min-[40rem]/xl:" ins="~/xl:min-[40rem]:" del="@lg:~@lg:" ins="~:@lg:"
-<!-- These are equivalent: -->
-<h1 class="lg:~lg:~text-4xl/base">Whoa!</h1>
-<h1 class="~:lg:~text-4xl/base">Whoa!</h1>
-
-<h1 class="min-[40rem]:~min-[40rem]/xl:~text-4xl/base">Whoa!</h1>
-<h1 class="~/xl:min-[40rem]:~text-4xl/base">Whoa!</h1>
-
-<!-- Container version: -->
-<h1 class="@lg:~@lg:~text-4xl/base">Whoa!</h1>
-<h1 class="~:@lg:~text-4xl/base">Whoa!</h1>
-``` */}

@@ -1,15 +1,35 @@
 --- 
-import Layout from '@layouts/Layout.astro'
+import '/assets/main.css'
+import type { MDXLayoutProps } from 'astro'
+import TOC from '/components/TOC.svelte'
+import { searchForWorkspaceRoot } from 'vite'
+import { relative } from 'node:path'
 import Input from './_example/input.mdx'
 import Output from './_example/output.mdx'
 import Example from './_example/input.astro'
 import Split from './_Split.svelte'
-import Docs from './_docs.mdx'
 import Browser from './_Browser.svelte'
+
+type Props = MDXLayoutProps<{
+	title: string
+}>
+
+const { headings, file, frontmatter } = Astro.props
+const root = searchForWorkspaceRoot(file)
+const path = relative(root, file)
 ---
 
-<Layout title="Hey">
-    <header class="~pt-5/8 ~pb-20/28 relative">
+<!DOCTYPE html>
+<html lang="en" class="min-h-screen motion-safe:scroll-smooth bg-white dark:bg-slate-900 antialiased overflow-x-hidden scroll-pt-10">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Astro description">
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/logo.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{frontmatter.title}</title>
+	</head>
+	<header class="~pt-5/8 ~pb-20/28 relative">
         <div class="absolute inset-0 -z-10 bg-slate-50 dark:bg-[#0B1120] ~bottom-40/72 dark:border-b dark:border-slate-100/5 before:absolute before:inset-0 before:[mask-image:linear-gradient(transparent,black)] before:bg-grid-slate-900/[0.04] before:bg-[bottom_1px_center] dark:before:bg-grid-slate-400/[0.05] dark:before:bg-bottom after:bg-gradients after:absolute after:bottom-0 after:w-full after:h-[120%] after:opacity-30 after:max-w-[90rem] after:-translate-x-1/2 after:left-1/2" />
         <nav class="container ~mb-20/28 flex items-center justify-start">
             <a href="/">
@@ -42,5 +62,22 @@ import Browser from './_Browser.svelte'
             </div>
         </div>
     </header>
-    <Docs />
-</Layout>
+	<div class="container grid grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)] ~lg:~gap-x-6/10">
+		<div class="relative max-lg:hidden w-[13rem]">
+			<div class="sticky -mt-10 top-0 ~lg:~pr-6/10 py-10 max-h-screen overflow-y-auto">
+				<TOC {headings} client:load />
+			</div>
+		</div>
+		<main>
+			<article class="prose prose-slate dark:prose-invert mx-auto w-full lg:max-w-none">
+				<slot />
+			</article>
+		</main>
+		<footer class="text-sm mt-16 lg:col-start-2 pt-10 pb-14 border-t border-slate-200 sm:flex justify-between text-slate-500 dark:border-slate-200/5">
+			<div class="mb-6 sm:mb-0 sm:flex">
+				<p>Copyright ©{new Date().getFullYear()}. Not affiliated with Tailwind Labs Inc.</p>
+			</div>
+			<a class="hover:text-slate-900 dark:hover:text-slate-400" href={`https://github.com/barvian/fluid.style/edit/main/${path}`}>Edit this page on GitHub</a>
+		</footer>
+	</div>
+</html>

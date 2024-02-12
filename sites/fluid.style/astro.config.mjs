@@ -5,9 +5,6 @@ import mdx from "@astrojs/mdx";
 import expressiveCode, { ExpressiveCodeTheme } from "astro-expressive-code";
 import { readFileSync } from 'node:fs'
 import sectionize from 'remark-sectionize'
-import { rehypeHeadingIds } from '@astrojs/markdown-remark';
-import { visit } from "unist-util-visit"
-import flatMap from 'unist-util-flatmap'
 
 /** @type {import('astro-expressive-code').AstroExpressiveCodeOptions} */
 const codeOptions = {
@@ -57,43 +54,13 @@ const codeOptions = {
       delDiffIndicatorColor: '#fb7185'
     }
   }
-};
+}
 
-/**
- * @template T
- * @template U
- * @param {Array<T>} arr
- * @param {U} x
- */
-const interleave = (arr, x) => arr.flatMap(e => [e, x]).slice(0, -1)
-
-// https://astro.build/config
 export default defineConfig({
   srcDir: '.',
   outDir: '.astro/dist',
   markdown: {
-    remarkPlugins: [sectionize],
-    rehypePlugins: [
-      rehypeHeadingIds, // include first so we can access them: https://docs.astro.build/en/guides/markdown-content/#heading-ids
-      () => (tree, file) => {
-        // Add span with ID inside headings, so it can be positioned separately (for scrolling reasons)
-        visit(tree, 'element', node => {
-          if (/^h[2-6]$/.test(node.tagName) && node.properties?.id) {
-            const id = node.properties.id
-            delete node.properties.id
-            node.children.unshift({
-              type: 'element',
-              tagName: 'span',
-              properties: {
-                'data-anchor': '',
-                id
-              },
-              children: []
-            })
-          }
-        })
-      }
-    ]
+    remarkPlugins: [sectionize]
   },
   integrations: [
     tailwind({

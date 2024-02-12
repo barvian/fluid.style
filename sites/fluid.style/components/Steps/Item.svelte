@@ -5,7 +5,7 @@
     "
     style:counter-increment="step"
 >
-    <div class="prose prose-slate dark:prose-invert [&_p:has(strong:only-child)]:mb-2 [&_p:has(strong:only-child)+p]:mt-0 mb-6 col-span-2 lg:mb-0 mt-0">
+    <div class="prose prose-sm prose-slate dark:prose-invert [&_p:has(strong:only-child)]:mb-2 [&_p:has(strong:only-child)+p]:mt-0 mb-6 col-span-2 lg:mb-0 mt-0">
         <slot />
     </div>
     <div class="-ml-10 lg:ml-0 col-span-3 [&>:first-child]:mt-0 [&>:last-child]:mb-0">

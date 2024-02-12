@@ -58,22 +58,23 @@ export default {
 			typography: {
 				DEFAULT: {
 					css: {
-						'section>:first-child': {
+						'&>section': {
+							'@apply py-12 first:pt-0 last:pb-0': {}
+						},
+						'&>section>:first-child': {
 							'margin-top': '0 !important'
 						},
-						'section>:last-child, :has(+ section)': {
+						'&>section>:last-child,&>section>section:last-child>:last-child': {
 							'margin-bottom': '0 !important'
 						},
-						'* + section': {
-							// Equivalent to h2 margin-top
-							'@apply pt-12 before:border-t before:border-slate-100 before:mb-12 before:block': {}
-						},
-						'section * + section': {
-							// Equivalent to h3 margin-top
-							'@apply pt-12 before:hidden': {}
+						'>section + section': {
+							'@apply border-t border-slate-100': {}
 						},
 						a: {
 							'@apply border-b font-semibold border-b-sky-300 hover:border-b-2 no-underline': {}
+						},
+						'h3': {
+							'margin-top': '2.4em'
 						},
 						'p,ul,ol': {
 							'@apply max-w-prose': {}
@@ -94,9 +95,8 @@ export default {
 				},
 				invert: {
 					css: {
-						'* + section': {
-							// Equivalent to h2 margin-top
-							'@apply before:border-slate-200 before:opacity-5': {}
+						'>section + section': {
+							'@apply border-slate-800': {}
 						},
 					}
 				}

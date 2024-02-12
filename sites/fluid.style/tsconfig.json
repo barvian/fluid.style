@@ -3,12 +3,9 @@
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
-    "baseUrl": ".",
+    "jsx": "preserve",
     "paths": {
-      "@lib/*": ["lib/*"],
-      "@layouts/*": ["layouts/*"],
-      "@components/*": ["components/*"],
-      "@assets/*": ["assets/*"]
+      "/*": ["./*"]
     }
   }
 }
