@@ -5,7 +5,7 @@
 
     let margin = writable(0), resizing = writable(false)
     export let height = "h-auto"
-    export let tooNarrowClass = "xl:hidden"
+    export let tooNarrowClass = "lg:hidden"
 </script>
 
 <Tip.Info class={tooNarrowClass}>Your browser isn't wide enough to see the full effect</Tip.Info>
