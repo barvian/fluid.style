@@ -76,6 +76,10 @@ export default {
 						'h3': {
 							'margin-top': '2.4em'
 						},
+						'h4': {
+							'font-size': '1.125em',
+							'margin-top': '2em'
+						},
 						'p,ul,ol': {
 							'@apply max-w-prose': {}
 						},
