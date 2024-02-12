@@ -12,6 +12,8 @@ import Browser from './_Browser.svelte'
 
 type Props = MDXLayoutProps<{
 	title: string
+    lead: string
+    description: string
 }>
 
 const { headings, file, frontmatter } = Astro.props
@@ -27,7 +29,8 @@ const path = relative(root, file)
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/logo.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>{frontmatter.title}</title>
+		<title>Fluid Tailwind CSS</title>
+        <meta name="description" content={frontmatter.description} />
 	</head>
 	<header class="~pt-5/8 ~pb-20/28 relative">
         <div class="absolute inset-0 -z-10 bg-slate-50 dark:bg-[#0B1120] ~bottom-40/72 dark:border-b dark:border-slate-100/5 before:absolute before:inset-0 before:[mask-image:linear-gradient(transparent,black)] before:bg-grid-slate-900/[0.04] before:bg-[bottom_1px_center] dark:before:bg-grid-slate-400/[0.05] dark:before:bg-bottom after:bg-gradients after:absolute after:bottom-0 after:w-full after:h-[120%] after:opacity-30 after:max-w-[90rem] after:-translate-x-1/2 after:left-1/2" />
@@ -45,10 +48,10 @@ const path = relative(root, file)
         </nav>
         <div class="container relative flex flex-col items-center">
             <h1 class="text-slate-900 max-w-3xl font-extrabold text-center ~text-4xl/6xl tracking-tight dark:text-white">
-                Smoother responsive styles in less code.
+                {frontmatter.title}
             </h1>
             <p class="mt-6 text-lg text-slate-600 text-center max-w-3xl dark:text-slate-400">
-                Modernize your Tailwind sites using your existing scales.
+                {frontmatter.lead}
             </p>
             <a class="bg-slate-900 ~mt-6/8 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 text-white font-semibold h-12 px-6 rounded-lg inline-flex items-center justify-center dark:bg-sky-500 dark:highlight-white/20 dark:hover:bg-sky-400" href="#installation">Get started</a>
             <div class="~mt-16/24 sm:~mt-24/36 relative w-full">

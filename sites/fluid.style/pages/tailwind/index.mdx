@@ -1,6 +1,7 @@
 ---
 layout: ./_Layout.astro
-title: Fluid Tailwind CSS Plugin
+title: Smoother responsive styles in less code.
+lead: Modernize your Tailwind sites using your existing scales.
 ---
 import Split from './_Split.svelte'
 import * as Steps from '/components/Steps'
@@ -22,10 +23,10 @@ import Resizer from '/components/Resizer.svelte'
   <Steps.Item>
     **Install the package**
 
-    Install `@fluidstyle/tailwindcss` via npm.
+    Install `@fluid.tw/plugin` via npm.
     <Fragment slot="code">
     ```sh
-    npm install -D @fluidstyle/tailwindcss
+    npm install -D @fluid.tw/plugin
     ```
     </Fragment>
   </Steps.Item>
@@ -35,7 +36,7 @@ import Resizer from '/components/Resizer.svelte'
     The custom extractor lets you use the new `~` prefix in your Tailwind classes.
     <Fragment slot="code">
       ```ts title="tailwind.config.ts" ins={1, 6}
-      import { fluidExtractor } from '@fluidstyle/tailwindcss'
+      import { fluidExtractor } from '@fluid.tw/plugin'
 
       export default {
         content: {
@@ -53,7 +54,7 @@ import Resizer from '/components/Resizer.svelte'
     Add fluid versions of every enabled [core plugin](https://tailwindcss.com/docs/configuration#core-plugins).
     <Fragment slot="code">
       ```ts title="tailwind.config.ts" ins=/, fluidCorePlugins/ ins={6}
-      import { fluidExtractor, fluidCorePlugins } from '@fluidstyle/tailwindcss'
+      import { fluidExtractor, fluidCorePlugins } from '@fluid.tw/plugin'
 
       export default {
         // ...
@@ -71,7 +72,7 @@ import Resizer from '/components/Resizer.svelte'
     <Tip.Info>This may be unnecessary in [future versions of Tailwind](https://github.com/tailwindlabs/tailwindcss/discussions/8378#discussioncomment-2779675)</Tip.Info>
     <Fragment slot="code">
       ```ts title="tailwind.config.ts" ins={6,7} ins=/, defaultThemeScreensInRems, defaultThemeFontSizeInRems/
-      import { fluidExtractor, fluidCorePlugins, defaultThemeScreensInRems, defaultThemeFontSizeInRems } from '@fluidstyle/tailwindcss'
+      import { fluidExtractor, fluidCorePlugins, defaultThemeScreensInRems, defaultThemeFontSizeInRems } from '@fluid.tw/plugin'
 
       export default {
         // ...
@@ -171,7 +172,7 @@ Either value can be omitted, in which case the plugin will use your smallest and
 screen, respectively.
 
 ```ts title="tailwind.config.ts" mark={6}
-import { ..., type FluidConfig } from '@fluidstyle/tailwindcss'
+import { ..., type FluidConfig } from '@fluid.tw/plugin'
 
 export default {
   theme: {
@@ -189,7 +190,7 @@ Either value can be omitted, in which case the plugin will use your smallest and
 largest container, respectively.
 
 ```ts title="tailwind.config.ts" mark={6}
-import { ..., type FluidConfig } from '@fluidstyle/tailwindcss'
+import { ..., type FluidConfig } from '@fluid.tw/plugin'
 
 export default {
   theme: {
@@ -232,12 +233,12 @@ If you want to set an arbitrary start screen with the `~` variant, you have to u
 `~min-[]` (just as you'd have to use `min-[]` to set an [arbitrary screen breakpoint](https://tailwindcss.com/docs/responsive-design#arbitrary-values)):
 
 <Tip.Bad>Trying to use `~[]:` to set an arbitrary start screen</Tip.Bad>
-```html
+```html del="~[20rem]"
 <div class="~[20rem]/lg:~text-base/4xl">
 ```
 
 <Tip.Good>Using `~min-[]` to set an arbitrary start screen</Tip.Good>
-```html
+```html mark="~min-[20rem]"
 <div class="~min-[20rem]/lg:~text-base/4xl">
 ```
 
@@ -259,7 +260,7 @@ Just like the `~` variant, both start and end containers are optional and will u
 ```
 
 <Tip.Bad>Trying to reference named containers</Tip.Bad>
-```html
+```html del=/3xl(\/main)/
 <div class="@container/main">
   <h1 class="~@/3xl/main:~text-lg/base">
 ```
@@ -271,7 +272,7 @@ When adding custom plugins to your `tailwind.config.js`, you can run them throug
 the `fluidize` function to automatically add fluid versions of all their utilities and components:
 
 ```ts title="tailwind.config.ts" ins=/, (fluidize)/ ins="fluidize(" ins=")"
-import { ..., fluidize } from '@fluidstyle/tailwindcss'
+import { ..., fluidize } from '@fluid.tw/plugin'
 import myFavoritePlugin from '...'
 
 export default {
