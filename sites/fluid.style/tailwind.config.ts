@@ -6,7 +6,7 @@ import defaultTheme from 'tailwindcss/defaultTheme'
 import { fluidCorePlugins, fluidExtractor, defaultThemeScreensInRems, defaultThemeFontSizeInRems, type FluidConfig } from '@fluidstyle/tailwindcss'
 const { '2xl': _, ...screens } = defaultThemeScreensInRems
 import svgToDataUri from 'mini-svg-data-uri'
-import flattenColorPalette from 'tailwindcss/lib/util/flattenColorPalette'
+import flattenColorPalette from 'tailwindcss-priv/lib/util/flattenColorPalette'
 
 export default {
 	content: {
@@ -107,7 +107,6 @@ export default {
 		fluidCorePlugins,
 		typographyPlugin,
 		containerQueryPlugin,
-		// fluidize(containerQueryPlugin),
 		plugin(({ addVariant, matchUtilities, theme }) => {
 			addVariant('current', '&[aria-current="page"]')
 			addVariant('group-current', ':merge(.group)[aria-current="page"] &')
