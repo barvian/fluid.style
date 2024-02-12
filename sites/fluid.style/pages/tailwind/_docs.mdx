@@ -82,16 +82,16 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
   </Steps.Item>
   <Steps.Item>
     <>
-      **Use `rem` for `screens`**
+      **Use `rem` for `screens` and `fontSize`**
 
-      Use `rem` versions of Tailwind's default screens to ensure greater
-      compability with core plugins. Make sure any custom screens you add also
-      use `rem` units.
+      Use `rem` versions of Tailwind's default screens and font sizes/line heights
+      to ensure greater compability with core plugins. Make sure any custom screens or font sizes
+      you add also use `rem` units.
       <Tip.Info>This [may be unnecessary](https://github.com/tailwindlabs/tailwindcss/discussions/8378#discussioncomment-2779675) in future versions of Tailwind</Tip.Info>
     </>
     <Fragment slot="code">
-      ```ts title="tailwind.config.ts" ins=/, defaultThemeScreensInRems/ ins={11} mark=/\/\/.*$/
-      import { fluidExtractor, fluidCorePlugins, defaultThemeScreensInRems } from '@fluidstyle/tailwindcss'
+      ```ts title="tailwind.config.ts" ins=/, defaultThemeScreensInRems, defaultThemeFontSizeInRems/ ins={10,15}
+      import { fluidExtractor, fluidCorePlugins, defaultThemeScreensInRems, defaultThemeFontSizeInRems } from '@fluidstyle/tailwindcss'
 
       export default {
         content: {
@@ -99,6 +99,10 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
           extract: fluidExtractor()
         },
         theme: {
+          fontSize: {
+            ...defaultThemeFontSizeInRems,
+            '10xl': ['10rem', '10rem'] // make sure custom font sizes/line heights use rem units
+          },
           screens: {
             xs: '30rem', // make sure custom screens use rem units
             ...defaultThemeScreensInRems
@@ -116,7 +120,7 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
 ## Basic usage
 
 <Resizer client:load height="h-32">
-  <button class="bg-sky-500 hover:bg-sky-700 ~@lg/2xl:~px-4/8 ~@lg/2xl:~py-2/4 ~@lg/2xl:~text-sm/xl rounded-full font-semibold text-white">Fluid button</button>
+  <button class="bg-sky-500 hover:bg-sky-400 ~@lg/2xl:~px-4/8 ~@lg/2xl:~py-2/4 ~@lg/2xl:~text-sm/xl rounded-full font-semibold text-white">Fluid button</button>
 </Resizer>
 ```html mark=/(\~.*?)\s+/
 <button class="bg-sky-500 ~px-4/8 ~py-2/4 ~text-sm/xl ...">Whoa!</h1>
@@ -124,8 +128,8 @@ import AnnotatedCode from '@components/AnnotatedCode.svelte'
 <Tip.Info class="xl:hidden">It helps to view these examples on a wider screen, to see the full effect</Tip.Info>
 
 Here's a quick overview:
-* Anything prefixed with `~` becomes fluid
-* Every fluid utility has a start and end value, separated by a `/`
+* The `~` prefix makes a utility fluid
+* Fluid utilities have a start and end value, separated by a `/`
 * Fluid utilities interpolate between their start value and end value when the viewport is between the start point and end point, respectively
 * The start and end points default to the smallest and largest screen, but [they can be configured globally](#customizing-default-screens) or per-utility (below)
 
@@ -156,7 +160,7 @@ You can omit either start or end screen to use your [global defaults](#customizi
 ### Customizing containers
 
 If you have the [official container query](https://github.com/tailwindlabs/tailwindcss-container-queries) plugin
-installed, you can make the start/end points relative to the nearest `@container` with the `~@` variant:
+installed, you can make the start/end points relative to the nearest `@container` rather than the viewport by using the `~@` variant:
 
 ```html mark="~@md/lg:"
 <h1 class="~@md/lg:~text-base/4xl">Relative to container</h1>
@@ -302,7 +306,7 @@ export default {
 }
 ```
 
-### Arbitrary values in `~` variant
+### Arbitrary start screens
 
 If you want to set an arbitrary start screen with the `~` variant, you have to use
 `~min-[]` (just as you'd have to use `min-[]` to set an [arbitrary screen breakpoint](https://tailwindcss.com/docs/responsive-design#arbitrary-values)):

@@ -14,10 +14,7 @@
     "allowJs": true
   },
   "include": [
-    "./src/index.ts",
-    "./tests/index.ts"
-  ],
-  "exclude": [
-    "./tests/index.test.ts"
+    "src/**/*.ts",
+    "tests/**/*.ts"
   ]
 }

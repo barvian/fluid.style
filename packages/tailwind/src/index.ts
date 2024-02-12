@@ -1,16 +1,16 @@
 import plugin from 'tailwindcss/plugin'
 type Plugin = ReturnType<typeof plugin>
-// @ts-expect-error untyped source file
-import { corePlugins } from 'tailwindcss/lib/corePlugins'
+import { corePlugins } from 'tailwindcss-priv/lib/corePlugins'
 import { CSSRuleObject, PluginAPI, PluginCreator } from 'tailwindcss/types/config'
-import { noop, log, LogLevel, mapObject, CSSLength, type RawValue, generateExpr, addVariantWithModifier, parseExpr, unique, coalesce } from './util'
+import { noop, log, LogLevel, mapObject, CSSLength, type RawValue, generateExpr, addVariantWithModifier, parseExpr, unique, coalesce, tuple } from './util'
 import defaultTheme from 'tailwindcss/defaultTheme'
 import { Container } from 'postcss'
 import { mapObjectSkip } from 'map-obj'
 
-export type ThemeConfigFluid = Partial<{
-    defaultScreens: [string] | [undefined, string] | [string, string],
-    defaultContainers: [string] | [undefined, string] | [string, string]
+type Breakpoints = [string] | [undefined, string] | [string, string]
+export type FluidConfig = Partial<{
+    defaultScreens: Breakpoints
+    defaultContainers: Breakpoints
 }>
 
 export const fluidCorePlugins = plugin((api: PluginAPI) => {
@@ -49,9 +49,9 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
 
             // Normalize inputs
             if (!Array.isArray(from)) from = [from]
-            else if (/^(string|number)$/.test(typeof from[1])) from[1] = { lineHeight: from[1]+'' }
+            else if (/^(string|number)$/.test(typeof from[1])) from[1] = { lineHeight: from[1] }
             if (!Array.isArray(to)) to = [to]
-            else if (/^(string|number)$/.test(typeof to[1])) to[1] = { lineHeight: to[1]+'' }
+            else if (/^(string|number)$/.test(typeof to[1])) to[1] = { lineHeight: to[1] }
 
             const rules: CSSRuleObject = {}
 
@@ -60,28 +60,13 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
             if (!parsedFontSizes) return null
             rules['font-size'] = generateExpr(parsedFontSizes[0], context.defaultFromScreen, parsedFontSizes[1], context.defaultToScreen, { checkSC144: true })
 
-            // Line height. Make sure to use double equals to catch nulls and strings <-> numbers
+            // Line height. Make sure to use == not !== to catch nullish and strings <-> numbers
             if (from[1]?.lineHeight == to[1]?.lineHeight) {
                 rules['line-height'] = from[1]?.lineHeight
             } else {
-                let parsedFromLineHeight = parseValue(from[1]?.lineHeight, context)
-                let parsedToLineHeight = parseValue(to[1]?.lineHeight, context)
-
-                // If we get one length and one number, it's probably safe to
-                // coerce the number to a length (which handles the higher fontSizes in the default theme)
-                if (!parsedFromLineHeight && !isNaN(parseFloat(from[1]?.lineHeight)) && parsedToLineHeight) {
-                    parsedFromLineHeight = new CSSLength(parsedFontSizes[0].number*parseFloat(from[1].lineHeight), parsedFontSizes[0].unit)
-                } else if (parsedFromLineHeight && !parsedToLineHeight && !isNaN(parseFloat(to[1]?.lineHeight))) {
-                    parsedToLineHeight = new CSSLength(parsedFontSizes[1].number*parseFloat(to[1].lineHeight), parsedFontSizes[1].unit)
-                }
-                if (!parsedFromLineHeight || !parsedToLineHeight) {
-                    log.warn('missing-values', [
-                        'Attempted to set fluid text with incompatible line heights'
-                    ])
-                    return null
-                }
-
-                rules['line-height'] = generateExpr(parsedFromLineHeight, context.defaultFromScreen, parsedToLineHeight, context.defaultToScreen)
+                const parsedLineHeights = parseValues(from[1]?.lineHeight, to[1]?.lineHeight, context, LogLevel.WARN)
+                if (!parsedLineHeights) return null
+                rules['line-height'] = generateExpr(parsedLineHeights[0], context.defaultFromScreen, parsedLineHeights[1], context.defaultToScreen)
             }
 
             // Letter spacing. Make sure to use double equals to catch nulls and strings <-> numbers
@@ -95,7 +80,7 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
 
             // Font weight. Make sure to use double equals to catch nulls and strings <-> numbers
             // Also, conveniently: NaN !== NaN
-            if (from[1]?.fontWeight == to[1]?.fontWeight || parseFloat(from[1]?.fontWeight) === parseFloat(to[1]?.fontWeight)) {
+            if (from[1]?.fontWeight == to[1]?.fontWeight) {
                 rules['font-weight'] = from[1]?.fontWeight
             } else {
                 return null
@@ -197,11 +182,8 @@ export const fluidCorePlugins = plugin((api: PluginAPI) => {
 })
 
 
-export type TransformValueFn = (val: any) => RawValue
-type InterceptOptions = Partial<{
-    addOriginal: boolean
-    transform: Record<string, TransformValueFn>
-}>
+type MatchUtilOrComp = PluginAPI['matchUtilities'] | PluginAPI['matchComponents']
+type FilterFn = (utilsOrComps: Parameters<MatchUtilOrComp>[0], options: Parameters<MatchUtilOrComp>[1]) => boolean
 
 /**
  * Return a modified PluginAPI that intercepts calls to matchUtilities and matchComponents
@@ -210,13 +192,8 @@ type InterceptOptions = Partial<{
 function interceptUtilities(api: PluginAPI, {
     addOriginal = true,
     transform
-}: InterceptOptions = {}, context: Context): PluginAPI {
-    // Make any add* or match* function (i.e. addComponents) a noop if we're not including the original
-    const rest = addOriginal ? api : mapObject(api, (a, fn) =>
-        [a, a.startsWith('add') || a.startsWith('match') ? noop : fn]
-    )
-
-    const matchUtilities: PluginAPI['matchUtilities'] = (utilities, options) => {
+}: Partial<{ addOriginal: boolean, filter: FilterFn }> = {}, context: Context): PluginAPI {
+    const matchUtilities: MatchUtilOrComp = (utilities, options) => {
         // Add original
         if (addOriginal) api.matchUtilities(utilities, options)
         // Skip ones with types that don't include length or any
@@ -247,7 +224,7 @@ function interceptUtilities(api: PluginAPI, {
         // TW doesn't use the DEFAULT convention for modifiers so we'll extract it:
         const { DEFAULT, ...modifiers } = values
         
-        api.matchUtilities<any, any>(mapObject(utilities, (util, origFn) =>
+        api.matchUtilities(mapObject(utilities, (util, origFn) =>
             [`~${util}`, function(_from, { modifier: _to }) {
                 // See note about default modifiers above
                 if (_to === null && DEFAULT) _to = DEFAULT
@@ -274,18 +251,27 @@ function interceptUtilities(api: PluginAPI, {
         })
     }
     
-    // @ts-expect-error the `rest` thing is too dynamic for TS
-    return { ...rest, matchUtilities, matchComponents: matchUtilities }
+    return {
+        ...api,
+        ...(addOriginal ? {} : {
+            addUtilities: noop,
+            addComponents: noop,
+            addVariant: noop,
+            addBase: noop,
+            matchVariant: noop,
+            addDefaults: noop // private API used in corePlugins
+        }),
+        matchUtilities,
+        matchComponents: matchUtilities
+    }
 }
 
 function parseValue(_val: any, { unit, theme }: Context, level?: LogLevel) {
     if (!_val) return null
     if (typeof _val === 'string') {
         // Test if it's a theme() function
-        const [, sign, lookup] = _val.match(/^([+-]?)theme\((.*?)\)$/) ?? []
-        if (lookup) {
-            _val = sign+theme(lookup)
-        }
+        const [, lookup] = _val.match(/^\s*theme\((.*?)\)\s*$/) ?? []
+        if (lookup) _val = theme(lookup)
     }
     const val = CSSLength.parse(_val)
     if (!val) {
@@ -332,6 +318,7 @@ function parseValues(
 }
 
 class NoChangeBPError extends Error {}
+class BreakpointNotFoundError extends Error {}
 function rewriteExprs(container: Container, context: Context, [_fromBP, _toBP]: [CSSLength | RawValue, CSSLength | RawValue], atContainer?: string | true) {
     try {
         const fromBP = (typeof _fromBP === 'string')
@@ -339,24 +326,27 @@ function rewriteExprs(container: Container, context: Context, [_fromBP, _toBP]: 
             ? parseValue(_fromBP, context, LogLevel.RISK)
             : _fromBP
         
-        let toBP = _toBP
-        if (typeof toBP === 'string') {
+        const toBP = (() => {
+            if (typeof _toBP !== 'string') return _toBP
             // Check if it's [arbitrary] (i.e. from a modifier)
-            if (/^\[(.*?)\]$/.test(toBP)) {
-                toBP = parseValue(toBP.match(/^\[(.*?)\]$/)?.[1], context, LogLevel.RISK)
+            if (/^\[(.*?)\]$/.test(_toBP)) {
+                return parseValue(_toBP.match(/^\[(.*?)\]$/)?.[1], context, LogLevel.RISK)
             } else {
-                toBP = context[atContainer ? 'containers' : 'screens']?.[toBP]
-                if (!toBP) return [] // fail if we couldn't find in theme
+                const bp = context[atContainer ? 'containers' : 'screens']?.[_toBP]
+                if (!bp) throw new BreakpointNotFoundError() // fail if we couldn't find in theme
+                return bp
             }
-        }
+        })()
         
         const defaultFromBP = atContainer ? context.defaultFromContainer! : context.defaultFromScreen
         const defaultToBP = atContainer ? context.defaultToContainer! : context.defaultToScreen
             
         // Walk through each `property: value` and rewrite any fluid expressions
+        let foundExpr = false
         container.walkDecls((decl) => {
             const parsed = parseExpr(decl.value)
             if (!parsed) return
+            foundExpr = true
             const resolvedFromBP = fromBP ?? defaultFromBP
             const resolvedToBP = toBP ?? defaultToBP
             if (resolvedFromBP.number === resolvedToBP.number) {
@@ -365,6 +355,13 @@ function rewriteExprs(container: Container, context: Context, [_fromBP, _toBP]: 
 
             decl.value = generateExpr(parsed.from, resolvedFromBP, parsed.to, resolvedToBP, { atContainer, checkSC144: parsed.checkSC144 })
         })
+        // Prevent rules like ~md/lg:relative
+        if (!foundExpr) {
+            log.warn('no-utility', [
+                'Fluid variants can only be used with fluid utilities'
+            ])
+            return [] as const
+        }
     } catch (e) {
         if (e instanceof NoChangeBPError) {
             log.warn('no-change', [
@@ -377,7 +374,7 @@ function rewriteExprs(container: Container, context: Context, [_fromBP, _toBP]: 
 }
 
 function getContext(theme: PluginAPI['theme']) {
-    const fluid: ThemeConfigFluid = theme('fluid') ?? {}
+    const fluid: FluidConfig = theme('fluid') ?? {}
 
     function getBreakpoints(bpsType: 'container' | 'screen') {
         const bpsKey = bpsType === 'container' ? 'containers' : 'screens'
@@ -385,13 +382,17 @@ function getContext(theme: PluginAPI['theme']) {
         if (bpsType === 'container' && !rawBps) return [] as const
 
         // Get all "simple" breakpoints (i.e. just a length, not an object)
-        const bps = mapObject(rawBps!, (k, v) => CSSLength.test(v) ? [k as string, CSSLength.parse(v)] : mapObjectSkip) as Record<string, CSSLength>
+        const bps = mapObject(rawBps!, (k, v) => {
+            const len = CSSLength.parse(v)
+            if (!len) return mapObjectSkip
+            return [k as string, len]
+         })
         const defaultsKey = bpsType === 'container' ? 'defaultContainers' : 'defaultScreens'
         
         let sortedBreakpoints: CSSLength[]
         function resolveDefaultBreakpoint(bpType: 'from' | 'to', rawBp: string | undefined) {    
             if (typeof rawBp === 'string') {
-                const parsed = CSSLength.parse(rawBps![rawBp] ?? rawBp)
+                const parsed = CSSLength.parse(rawBp)
                 if (!parsed) throw new Error(`Invalid value for \`theme.fluid.${defaultsKey}[${bpType === 'from' ? 0 : 1}]\``)
                 return parsed
             } else if (rawBp != null) {
@@ -431,13 +432,13 @@ function getContext(theme: PluginAPI['theme']) {
 }
 type Context = ReturnType<typeof getContext>
 
-export { default as buildFluidExtract } from './extractor'
+export { default as fluidExtractor } from './extractor'
 
 /**
- * Re-exports all the default simple screens in rems, for better
+ * Re-export all the default simple screens in rems, for better
  * compatibility with default utilities
  */
-export const defaultScreensInRems = mapObject(defaultTheme.screens ?? {}, (name, v) => {
+export const defaultThemeScreensInRems = mapObject(defaultTheme.screens ?? {}, (name, v) => {
     if (typeof v !== 'string') return [name, v]
     const len = CSSLength.parse(v)
     if (!len || len.unit !== 'px') return [name, v]
@@ -445,12 +446,23 @@ export const defaultScreensInRems = mapObject(defaultTheme.screens ?? {}, (name,
 })
 
 /**
+ * Re-export all the default simple screens in rems, for better
+ * compatibility with default utilities
+ */
+export const defaultThemeFontSizeInRems = mapObject(defaultTheme.fontSize ?? {}, (name, [_size, { lineHeight: _lineHeight }]) => {
+    const size = CSSLength.parse(_size)
+    const lineHeightLength = CSSLength.parse(_lineHeight)
+    if (!size || (lineHeightLength && lineHeightLength.number !== 0) || isNaN(parseFloat(_lineHeight))) return [name, tuple([_size, _lineHeight])]
+    return [name, tuple([_size, new CSSLength(parseFloat(_lineHeight) * size.number, size.unit).cssText])]
+})
+
+/**
  * Create fluid versions for a plugin's utilities.
  */
 export const fluidize = (
-    { handler: _handler, config }: Plugin,
-    options?: InterceptOptions
+    { handler, config }: Plugin,
+    filter?: FilterFn
 ): Plugin => ({
-    handler: (api) => _handler(interceptUtilities(api, options, getContext(api.theme))),
+    handler: (api) => handler(interceptUtilities(api, { filter }, getContext(api.theme))),
     config
 })

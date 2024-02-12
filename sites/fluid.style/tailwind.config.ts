@@ -3,8 +3,8 @@ import plugin from 'tailwindcss/plugin'
 import typographyPlugin from '@tailwindcss/typography'
 import containerQueryPlugin from '@tailwindcss/container-queries'
 import defaultTheme from 'tailwindcss/defaultTheme'
-import { fluidCorePlugins, buildFluidExtract, defaultScreensInRems, fluidize, type ThemeConfigFluid } from '../../packages/tailwind/src'
-const { '2xl': _, ...screens } = defaultScreensInRems
+import { fluidCorePlugins, fluidExtractor, defaultThemeScreensInRems, defaultThemeFontSizeInRems, type FluidConfig } from '../../packages/tailwind/src'
+const { '2xl': _, ...screens } = defaultThemeScreensInRems
 import svgToDataUri from 'mini-svg-data-uri'
 import flattenColorPalette from 'tailwindcss/lib/util/flattenColorPalette'
 
@@ -18,15 +18,16 @@ export default {
 				// Only return stuff in <component>s
 				.match(/<[^/].*?>/g)?.join() ?? ''
 		},
-		extract: buildFluidExtract()
+		extract: fluidExtractor()
 	},
 	corePlugins: {
 		container: false
 	},
 	theme: {
+		fontSize: defaultThemeFontSizeInRems,
 		screens: {
 			xs: '30rem',
-			...screens,
+			...screens
 		},
 		extend: {
 			borderColor: {
@@ -44,7 +45,7 @@ export default {
 				gradients: `radial-gradient(38.61% 47.1% at 41.44% 51.75%, theme('colors.yellow.300')33 0%, theme('colors.yellow.300')00 100%), radial-gradient(23.53% 56.72% at 37.45% 68.12%, theme('colors.purple.300') 0%, theme('colors.purple.300')00 100%), radial-gradient(33.67% 28.07% at 73.67% 49.32%, theme('colors.green.300')aa 0%, theme('colors.green.300')00 100%), radial-gradient(46.17% 24.74% at 59.13% 74.34%, theme('colors.orange.300') 0%, theme('colors.orange.300')00 100%), radial-gradient(32.45% 44.17% at 30.56% 70.83%, theme('colors.blue.300') 0%, theme('colors.blue.300')00 100%)`
 			},
 			fluid: {
-			} satisfies ThemeConfigFluid,
+			} satisfies FluidConfig,
 			transitionTimingFunction: {
 				'in-expo': 'cubic-bezier(0.95, 0.05, 0.795, 0.035)',
 				'out-expo': 'cubic-bezier(0.19, 1, 0.22, 1)',
