@@ -23,7 +23,7 @@
     })
 </script>
 
-<div class="{cls} @container h-full pointer-events-none" aria-hidden>
+<div class="{cls} @container h-full pointer-events-none" role="presentation">
     <div class="shadow-xl relative @container rounded-xl h-full pointer-events-auto" style:margin-right="clamp(0px, {$margin}{didAnimate ? 'px' : 'rem'}, 100cqw - {minWidth})">
         <div class="rounded-xl ring-1 ring-slate-900/5 h-full flex flex-col items-stretch">
             <!-- Toolbar -->
