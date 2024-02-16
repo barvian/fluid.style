@@ -47,7 +47,7 @@
 <svelte:document on:keydown={handleKeydown} />
 
 <svelte:head>
-	<title>Fluid Style | Accessible, responsive CSS generator</title>
+	<title>Fluid Style - Accessible, responsive CSS generator</title>
 	<meta name="description" content="Generate responsive type or spacing CSS that meets accessibility requirements." />
 </svelte:head>
 

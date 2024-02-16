@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>Accessible fluid CSS type generator | Fluid Style</title>
+	<title>Accessible fluid CSS type generator - Fluid Style</title>
 	<meta name="description" content="Generate fluid, responsive CSS font sizes that meet accessibility requirements." />
 </svelte:head>
 

@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Fluid CSS spacing generator | Fluid Style</title>
+	<title>Fluid CSS spacing generator - Fluid Style</title>
 	<meta name="description" content="Generate fluid, responsive CSS spacing for modern browsers." />
 </svelte:head>
 
