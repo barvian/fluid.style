@@ -1,11 +1,8 @@
 import type { Config } from 'tailwindcss'
 import plugin from 'tailwindcss/plugin'
 import containerQueryPlugin from '@tailwindcss/container-queries'
-import defaultTheme from 'tailwindcss/defaultTheme'
 import { fluidExtractor, fluidCorePlugins, defaultThemeFontSizeInRems, defaultThemeScreensInRems } from 'fluid-tailwind'
 const { '2xl': _, ...screens } = defaultThemeScreensInRems
-
-const output = '56rem'
 
 export default {
 	content: {
@@ -15,7 +12,7 @@ export default {
 	theme: {
 		screens: ({ theme }) => ({
 			xs: '20rem',
-			output,
+			output: '59rem',
 			...screens,
 		}),
 		fontSize: defaultThemeFontSizeInRems,
@@ -29,11 +26,8 @@ export default {
 			spacing: {
 				'4.5': '1.125rem'
 			},
-			fontSize: {
-				'lg-md': '2rem'
-			},
 			maxWidth: {
-				output
+				output: '56rem'
 			},
 			colors: {
 				neutral: {
