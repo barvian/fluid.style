@@ -91,20 +91,20 @@
 		</div>
 		<button use:resize={{ direction: 'left', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth, resizing }}  tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5" class:bg-neutral-250={$resizing}><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
 	</header>
-	<main class="@container mt-[max(8vh,theme(spacing.12))] mb-[max(6vh,theme(spacing.8))]">
-		<form class="grid grid-cols-2 relative [--rounded:clamp(1rem,0.739rem_+_1.304vw,1.75rem)] max-w-4xl mx-auto before:absolute before:-inset-x-[10%] before:-top-[100%] before:-bottom-[80%] before:bg-gradients before:-z-[2] before:blur-[100px] before:pointer-events-none after:bg-white after:absolute after:inset-0 after:-z-[1] after:rounded-[--rounded] after:shadow-2xl">
-			<fieldset class="md:flex items-center gap-[3%] p-[clamp(1rem,0.652rem_+_1.739vw,2rem)]">
+	<main class="@container mt-[max(8vh,theme(spacing.12))] output:mb-[max(6vh,theme(spacing.8))]">
+		<form class="grid grid-cols-2 relative max-w-4xl mx-auto before:absolute before:opacity-30 before:saturate-150 before:-inset-x-[10%] before:-top-[100%] before:-bottom-[80%] before:bg-gradients before:-z-[2] before:blur-3xl before:pointer-events-none after:bg-white after:absolute after:inset-0 after:-z-[1] output:after:~rounded-2xl/4xl after:shadow-2xl">
+			<fieldset class="md:flex items-center gap-[3%] ~p-4/8">
 				<Number class="max-md:mb-2" label="Min size" id="min-size" bind:value={$min} bind:unit={$unit} />
 				<span class="inline md:inline-block md:mt-5 md:text-neutral-450 md:text-2xl">@</span>
 				<Number class="max-md:contents" label="Breakpoint" id="min-breakpoint" bind:value={$minBP} bind:unit={$unit} />
 			</fieldset>
-			<fieldset class="md:flex items-center gap-[3%] p-[clamp(1rem,0.652rem_+_1.739vw,2rem)] border-l border-neutral-200">
+			<fieldset class="md:flex items-center gap-[3%] ~p-4/8 border-l border-neutral-200">
 				<Number class="max-md:mb-2" label="Max size" id="max-size" bind:value={$max} bind:unit={$unit} />
 				<span class="inline md:inline-block md:mt-5 md:text-neutral-450 md:text-2xl">@</span>
 				<Number class="max-md:contents" label="Breakpoint" id="max-breakpoint" bind:value={$maxBP} bind:unit={$unit} unitTabbable />
 			</fieldset>
-			<output class="col-span-2 rounded-b-[--rounded] overflow-hidden overlap text-[clamp(1rem,0.957rem_+_0.217vw,1.125rem)]" for="min-size min-breakpoint max-size max-breakpoint">
-				<code class="block bg-[#393939] overflow-x-auto whitespace-nowrap text-white font-bold text-center p-[clamp(1.25rem,0.989rem_+_1.304vw,2rem)]">
+			<output class="col-span-2 output:~rounded-b-2xl/4xl overflow-hidden overlap ~text-base/lg" for="min-size min-breakpoint max-size max-breakpoint">
+				<code class="block bg-[#393939] overflow-x-auto whitespace-nowrap text-white font-bold text-center ~p-5/8">
 					<span class="text-neutral-400">{type ? 'font-size' : '[property]'}:</span>
 					<button type="button" title="Copy CSS code" class="cursor-copy border-neutral-200 group transition-colors hover:bg-white/10 active:bg-white/0 active:transition-none rounded-md border px-[0.889em] py-[0.55em] border-dashed" on:click={copyCode}>
 						{cssText}
@@ -123,7 +123,7 @@
 					</button>
 				</code>
 				{#if failRange?.length}
-					<div class="bg-red-500 relative text-white text-center font-bold p-[clamp(1.25rem,0.989rem_+_1.304vw,2rem)] flex items-center justify-center">
+					<div class="bg-red-500 relative text-white text-center font-bold ~p-5/8 flex items-center justify-center">
 						<p>
 							Fails <a class="underline underline-offset-[0.25em] hover:opacity-90" href="https://www.w3.org/WAI/WCAG21/Understanding/resize-text.html">WCAG SC 1.4.4</a> in Chrome/Edge/Firefox at viewport widths {to10th(failRange[0])}–{to10th(failRange[1])}{$unit}
 						</p>
@@ -133,9 +133,18 @@
 		</form>
 	</main>
 </div>
-<footer class="text-center mt-mt-[max(3vh,theme(spacing.5))] mb-[max(8vh,theme(spacing.12))] relative">
+<footer class="text-center mt-[max(6vh,theme(spacing.8))] output:mt-[max(3vh,theme(spacing.5))] mb-[max(8vh,theme(spacing.12))] relative">
 	<p class="text-black/40 leading-loose">
 		Created by <a href="https://barvian.me" class="whitespace-nowrap underline underline-offset-[0.25em] text-black  hover:opacity-80">Maxwell Barvian</a>, with some math help by <a class="text-black  hover:opacity-80 whitespace-nowrap underline underline-offset-[0.25em]" href="https://www.linkedin.com/in/zach-barvian-5aa406113">Zach Barvian</a>.<br/>
 		Initial accessibility observations made by <a class="whitespace-nowrap underline underline-offset-[0.25em] text-black  hover:opacity-80" href="https://adrianroselli.com/2019/12/responsive-type-and-zoom.html">Adrian Roselli</a>.
 	</p>
+	<a href="//fluid.tw" class="mt-8 rounded-full p-1.5 pr-4 text-sm inline-flex font-medium items-center bg-sky-400/20 hover:bg-sky-400/25 transition text-sky-600">
+		<span class="rounded-full text-xs mr-2 px-2.5 py-1 bg-sky-400 text-white font-semibold">
+			New
+		</span>
+		Check out our Tailwind plugin
+		<svg class="ml-3 h-2.5" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<path d="M1 1L5 5L1 9" class="stroke-current" vector-effect="non-scaling-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+		</svg>			
+	</a>
 </footer>
