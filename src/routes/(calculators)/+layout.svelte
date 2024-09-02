@@ -92,7 +92,7 @@
 		<button use:resize={{ direction: 'left', value: prefWidth, double: true, onStop: () => $prefWidth = actualWidth, resizing }}  tabindex="-1" class="cursor-ew-resize bg-neutral-150 outline-none hover:bg-neutral-250 touch-manipulation w-4.5 flex items-center justify-center gap-0.5" class:bg-neutral-250={$resizing}><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /><div class="bg-neutral-450 w-0.5 h-6 rounded-full" /></button>
 	</header>
 	<main class="@container mt-[max(8vh,theme(spacing.12))] output:mb-[max(6vh,theme(spacing.8))]">
-		<form class="grid grid-cols-2 relative output:max-w-output mx-auto before:absolute before:opacity-30 before:saturate-150 before:-inset-x-[10%] before:-top-[100%] before:-bottom-[80%] before:bg-gradients before:-z-[2] before:blur-3xl before:pointer-events-none after:bg-white after:absolute after:inset-0 after:-z-[1] output:after:~rounded-2xl/4xl after:shadow-2xl">
+		<form class="grid grid-cols-2 relative output:max-w-output mx-auto bg-white ~rounded-2xl/4xl shadow-2xl">
 			<fieldset class="md:flex items-center gap-[3%] ~p-4/8">
 				<Number class="max-md:mb-2" label="Min size" id="min-size" bind:value={$min} bind:unit={$unit} />
 				<span class="inline md:inline-block md:mt-5 md:text-neutral-450 md:text-2xl">@</span>
