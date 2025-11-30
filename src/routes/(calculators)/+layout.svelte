@@ -142,7 +142,7 @@
 		<span class="rounded-full text-xs mr-2 px-2.5 py-1 bg-sky-400 text-white font-semibold">
 			New
 		</span>
-		Check out our Tailwind plugin
+		Check out the Tailwind plugin
 		<svg class="ml-3 h-2.5" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg">
 			<path d="M1 1L5 5L1 9" class="stroke-current" vector-effect="non-scaling-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 		</svg>			
